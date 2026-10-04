@@ -12,7 +12,6 @@ The repository is structured to allow parallel development of the hardware/robot
   * `hardware-parts.md`: List of hardware components and wiring plans.
 * 📂 **`robot/`** - ROS 2 (Humble/Jazzy) based robot control software and configurations (LiDAR, motor drivers, SLAM, Nav2).
 * 📂 **`web/`** - Web-based control interface (client side). Contains the UI source code and simulated (`mock`) data for testing without hardware.
-* 📄 **`PROJECT_BOARD.md`** - Task and to-do list for tracking development phases.
 
 ## 🛠️ Technologies Used
 
