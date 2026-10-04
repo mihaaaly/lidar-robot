@@ -15,17 +15,17 @@ Based on the specifications outlined in lidar-robot-projekt-leiras.md, this proj
 ## 3. Hardware Requirements
 
 **Control & Processing**
-- Raspberry Pi 4 (4GB+) or Raspberry Pi 5
-- microSD card (32GB+, A2 class)
+- Raspberry Pi 5
+- microSD card (64GB, A2 class)
 
 **Sensors**
-- LiDAR: RPLidar A1, LD19, or LD06
-- IMU: MPU6050 or BNO055 (for odometry fusion)
+- LiDAR: RFLidar
+- IMU: MPU6050 (for odometry fusion)
 
 **Drivetrain**
 - 2x DC motors with built-in encoders
 - 1x free-spinning caster wheel (differential drive setup)
-- Motor driver: TB6612FNG or DRV8833
+- Motor driver: DRV8833
 
 **Power Supply**
 - LiPo battery (dedicated power for motors)
@@ -34,7 +34,6 @@ Based on the specifications outlined in lidar-robot-projekt-leiras.md, this proj
 
 **Mechanical**
 - Laser-cut or 3D-printed chassis
-- Logic level shifters (if required)
 - Collision bumper with emergency stop switch (optional)
 
 ## 4. Software Architecture & Technologies
@@ -135,14 +134,3 @@ lidar-robot/
 
 **Developer Tools**
 - Raw topic inspector, rosbag recording triggers, and simulated mode toggles.
-
-## 9. Recommended Development Sequence
-
-1. Finalize the system interface and repository structure.
-2. Develop drivetrain, encoder odometry, and manual control (Hardware) / Create UI boilerplate and mock data (Web).
-3. Integrate LiDAR and display the live view on the web interface.
-4. Implement SLAM and environment mapping.
-5. Setup localization on a saved map (AMCL).
-6. Configure Nav2 for waypoint navigation and implement the "Go Home" feature.
-7. Develop the no-go zone editor and integrate the keepout layer.
-8. Implement secondary web features based on post-MVP prioritization.
