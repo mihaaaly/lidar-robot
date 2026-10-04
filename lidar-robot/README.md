@@ -1,25 +1,148 @@
-# LiDAR-Guided Autonomous Mobile Robot 🤖🚗
+# LiDAR-Controlled Autonomous Mobile Robot
 
-## 🎯 Project Goal
-The goal of this project is to build and program a mobile robot that uses a LiDAR sensor to autonomously map its environment (SLAM), avoid obstacles, and navigate to user-defined points via a web-based control interface. Additionally, the robot is capable of saving a "base point" (home position) and automatically returning to it once its tasks are completed.
+## 1. Overview
 
-## 📁 File Structure
-The repository is structured to allow parallel development of the hardware/robot software and the web interface without conflicts.
+Based on the specifications outlined in lidar-robot-projekt-leiras.md, this project aims to develop a Raspberry Pi-controlled mobile robot. Utilizing a LiDAR sensor and encoder-equipped motors, the robot can autonomously map its environment and navigate to designated waypoints via a web interface. Each mapped environment features a saved "base point" to which the robot can automatically return. The architecture is designed to support parallel development, dividing the workload into two main streams: hardware/robotics and web interface development.
 
-* 📂 **`docs/`** - Project documentation.
-  * `interface.md`: **CRITICAL FILE!** Defines the ROS topics and JSON structures for communication between the robot and the web interface.
-  * `architecture.md`: Detailed description of the software architecture.
-  * `hardware-parts.md`: List of hardware components and wiring plans.
-* 📂 **`robot/`** - ROS 2 (Humble/Jazzy) based robot control software and configurations (LiDAR, motor drivers, SLAM, Nav2).
-* 📂 **`web/`** - Web-based control interface (client side). Contains the UI source code and simulated (`mock`) data for testing without hardware.
+## 2. Key Features
 
-## 🛠️ Technologies Used
+- Environment mapping using LiDAR (SLAM).
+- Autonomous navigation to arbitrary user-defined points on the mapped layout.
+- Saved base points for each map, enabling automated return-to-home functionality.
+- Web-based user interface for map editing and defining no-go zones (keepout masks).
+- Live LiDAR scan visualization on the web interface, alongside the generated map.
 
-**Robot (Server) Side:**
-* **OS:** Ubuntu (ARM64) on Raspberry Pi
-* **Framework:** ROS 2 (Nav2, slam_toolbox, robot_localization)
-* **Sensors:** LiDAR (RPLidar / LD19), Motor encoders, IMU
+## 3. Hardware Requirements
 
-**Web (Client) Side:**
-* **Communication:** `rosbridge_suite` (WebSocket)
-* **ROS Integration:** `roslibjs`, `ros2djs`
+**Control & Processing**
+- Raspberry Pi 4 (4GB+) or Raspberry Pi 5
+- microSD card (32GB+, A2 class)
+
+**Sensors**
+- LiDAR: RPLidar A1, LD19, or LD06
+- IMU: MPU6050 or BNO055 (for odometry fusion)
+
+**Drivetrain**
+- 2x DC motors with built-in encoders
+- 1x free-spinning caster wheel (differential drive setup)
+- Motor driver: TB6612FNG or DRV8833
+
+**Power Supply**
+- LiPo battery (dedicated power for motors)
+- DC-DC step-down converter (to provide stable power to the Raspberry Pi)
+- BMS / Battery charger
+
+**Mechanical**
+- Laser-cut or 3D-printed chassis
+- Logic level shifters (if required)
+- Collision bumper with emergency stop switch (optional)
+
+## 4. Software Architecture & Technologies
+
+**Core Technologies**
+- **ROS 2** (Humble or Jazzy on Ubuntu 22.04/24.04 ARM64)
+- **Nav2** for navigation and path planning
+- **slam_toolbox** for SLAM and mapping
+- **Node-RED** for telemetry routing, automation workflows, and bridging ROS 2 data with high-level system logic.
+
+**System Structure**
+
+*Raspberry Pi (Robot Side)*
+- LiDAR driver (`rplidar_ros` / `ldlidar_stl_ros2`)
+- Motor control node and encoder reading
+- `robot_localization` (EKF: encoder and IMU fusion)
+- `slam_toolbox` (Map building)
+- `nav2` (AMCL, planner, controller, keepout_filter)
+- Map manager (saving/loading maps and base points)
+- `rosbridge_suite` (WebSocket communication for the web UI)
+- Node-RED (automation layer and logic integration)
+
+*Web Application*
+- `roslibjs` / `ros2djs` (Map rendering and ROS communication)
+- No-go zone editor (Publishing keepout masks)
+- Live `/scan` processing and rendering
+- "Go Home" functionality (triggering `navigate_to_pose` for the base point)
+- Map switching interface
+
+## 5. Development Interface
+
+To enable parallel development, the hardware and web teams rely on a predefined data structure documented in `docs/interface.md`. 
+
+- **ROS 2 Topics & Types:** `/map` (OccupancyGrid), `/scan` (LaserScan), `/odom`, `/goal_pose` (PoseStamped), `/keepout_mask`, `/battery_state`
+- **Connection:** `rosbridge_suite` WebSocket address and port
+- **Map Data Structure:** `{map_name, map_file, home_pose: {x, y, theta}}`
+
+While the physical robot is under development, the web team utilizes simulated/mock data based on this schema. Once the hardware is ready, the frontend is simply pointed to the Raspberry Pi's IP address.
+
+## 6. Repository Structure
+
+```text
+lidar-robot/
+├── README.md
+├── docs/
+│   ├── interface.md
+│   ├── architecture.md
+│   └── hardware-parts.md
+├── robot/              # Hardware and ROS 2 workspace
+│   ├── launch/
+│   ├── src/
+│   │   ├── motor_driver/
+│   │   ├── lidar_bringup/
+│   │   ├── localization/
+│   │   └── nav2_config/
+│   └── README.md
+├── web/                # Web interface application
+│   ├── src/
+│   ├── public/
+│   ├── mock/           # Simulated ROS data for frontend testing
+│   └── README.md
+├── PROJECT_BOARD.md
+└── .github/
+    └── ISSUE_TEMPLATE.md
+```
+
+## 7. Team Division
+
+| Area | Responsibilities |
+|---|---|
+| **Hardware / Robot Side** | Chassis assembly, motor controller node, encoder and IMU fusion, LiDAR driver, SLAM and Nav2 integration, configuring rosbridge and Node-RED. |
+| **Web Side** | UI framework, roslibjs/ros2djs integration, live LiDAR and map rendering, no-go zone drawing tool, map management interface. |
+
+**Workflow:** The initial phase requires establishing `interface.md` and populating the project board. Following this, both sides will develop on independent branches using mock data, with regular synchronization meetings.
+
+## 8. Proposed Web Features (Pending Prioritization)
+
+**Mapping & Navigation**
+- Click-to-navigate, waypoint lists, and manual teleop control.
+- Zoom/pan mechanics, map switching, and map export/import.
+- "Go Home" button and automatic return on low battery.
+- Preferred routing zones and patrol modes.
+
+**Live Status & Monitoring**
+- Live LiDAR overlay, robot position/heading, and current speed.
+- Battery level, motor load, connection status, and error logs.
+- Optional camera stream.
+
+**History & Analytics**
+- Route history, operation statistics (distance, uptime), map versioning, and log exporting.
+
+**Control & Security**
+- Emergency stop, speed limits, user access control, and geofencing.
+
+**Configuration & UX**
+- Nav2 parameter tuning via UI, calibration wizard, and remote reboot.
+- Mobile-friendly responsive design, dark/light themes, and read-only shareable links.
+
+**Developer Tools**
+- Raw topic inspector, rosbag recording triggers, and simulated mode toggles.
+
+## 9. Recommended Development Sequence
+
+1. Finalize the system interface and repository structure.
+2. Develop drivetrain, encoder odometry, and manual control (Hardware) / Create UI boilerplate and mock data (Web).
+3. Integrate LiDAR and display the live view on the web interface.
+4. Implement SLAM and environment mapping.
+5. Setup localization on a saved map (AMCL).
+6. Configure Nav2 for waypoint navigation and implement the "Go Home" feature.
+7. Develop the no-go zone editor and integrate the keepout layer.
+8. Implement secondary web features based on post-MVP prioritization.
