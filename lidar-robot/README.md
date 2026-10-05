@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-Based on the specifications outlined in lidar-robot-projekt-leiras.md, this project aims to develop a Raspberry Pi-controlled mobile robot. Utilizing a LiDAR sensor and encoder-equipped motors, the robot can autonomously map its environment and navigate to designated waypoints via a web interface. Each mapped environment features a saved "base point" to which the robot can automatically return. The architecture is designed to support parallel development, dividing the workload into two main streams: hardware/robotics and web interface development.
+This project aims to develop a Raspberry Pi-controlled mobile robot. Utilizing a LiDAR sensor and encoder-equipped motors, the robot can autonomously map its environment and navigate to designated waypoints via a web interface. Each mapped environment features a saved "base point" to which the robot can automatically return. The architecture is designed to support parallel development, dividing the workload into two main streams: hardware/robotics and web interface development.
 
 ## 2. Key Features
 
