@@ -1,0 +1,7 @@
+sudo apt update
+sudo apt install ros-jazzy-foxglove-bridge -y
+sudo apt install ros-jazzy-rplidar-ros -y
+
+
+sudo chmod 666 /dev/ttyUSB0
+
