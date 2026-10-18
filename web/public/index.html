@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LiDAR Autonomous Robot - Live Dashboard</title>
+    <!-- Lokálisan kiszolgált roslibjs az offline működéshez -->
+    <script src="js/roslib.min.js"></script>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0d1117;
+            color: #c9d1d9;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+        header {
+            background-color: #161b22;
+            padding: 12px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #30363d;
+        }
+        header h1 { font-size: 1.2rem; color: #58a6ff; }
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            background-color: #21262d;
+            border: 1px solid #30363d;
+        }
+        .status-connected { color: #3fb950; border-color: #2ea043; }
+        .status-error { color: #f85149; border-color: #da3633; }
+        
+        main {
+            display: flex;
+            flex: 1;
+            position: relative;
+        }
+        #canvas-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #090d13;
+            position: relative;
+        }
+        canvas {
+            background-color: #0d1117;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+            cursor: grab;
+        }
+        .sidebar {
+            width: 280px;
+            background-color: #161b22;
+            border-left: 1px solid #30363d;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .card {
+            background-color: #21262d;
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid #30363d;
+        }
+        .card h3 { font-size: 0.9rem; color: #8b949e; margin-bottom: 8px; }
+        .stat-value { font-size: 1.3rem; font-weight: bold; color: #58a6ff; }
+        .controls { display: flex; gap: 8px; margin-top: 8px; }
+        button {
+            flex: 1;
+            padding: 8px;
+            background-color: #238636;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover { background-color: #2ea043; }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>🤖 LiDAR Autonomous Robot — On-Board Web UI</h1>
+    <div id="conn-status" class="status-badge">⏳ Csatlakozás: ws://...</div>
+</header>
+
+<main>
+    <div id="canvas-container">
+        <canvas id="lidarCanvas" width="750" height="750"></canvas>
+    </div>
+
+    <aside class="sidebar">
+        <div class="card">
+            <h3>📡 LiDAR (/scan) Telemetria</h3>
+            <p>Pontok száma: <span id="point-count" class="stat-value">0</span></p>
+            <p style="margin-top:6px;">Legközelebbi tárgy: <span id="min-dist" class="stat-value">-</span> m</p>
+        </div>
+
+        <div class="card">
+            <h3>🔍 Radar Nézet (Zoom)</h3>
+            <p>Skála: <span id="scale-val">80</span> px / méter</p>
+            <div class="controls">
+                <button onclick="changeZoom(15)">+ Közelítés</button>
+                <button onclick="changeZoom(-15)">- Távolítás</button>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>ℹ️ Rendszerinfó</h3>
+            <p style="font-size: 0.85rem; color: #8b949e;">
+                Híd: <b>rosbridge_suite (:9090)</b><br>
+                Téma: <b>/scan (LaserScan)</b><br>
+                Webszerver: <b>Nginx (:80)</b>
+            </p>
+        </div>
+    </aside>
+</main>
+
+<script>
+    // 1. Dinamikus csatlakozás a Raspberry Pi rosbridge szerveréhez (Port 9090)
+    const wsHost = window.location.hostname || 'pi5-ros.local';
+    const wsUrl = `ws://${wsHost}:9090`;
+    const statusEl = document.getElementById('conn-status');
+
+    const ros = new ROSLIB.Ros({ url: wsUrl });
+
+    ros.on('connection', () => {
+        statusEl.textContent = `🟢 Élő kapcsolat (${wsUrl})`;
+        statusEl.className = 'status-badge status-connected';
+    });
+
+    ros.on('error', (error) => {
+        statusEl.textContent = `🔴 Hiba (${wsUrl})`;
+        statusEl.className = 'status-badge status-error';
+    });
+
+    ros.on('close', () => {
+        statusEl.textContent = `⚪ Kapcsolat bontva (${wsUrl})`;
+        statusEl.className = 'status-badge status-error';
+    });
+
+    // 2. Radar Canvas beállítások
+    const canvas = document.getElementById('lidarCanvas');
+    const ctx = canvas.getContext('2d');
+    let pixelsPerMeter = 80; // Alapértelmezett nagyítás: 1 méter = 80 pixel
+
+    function changeZoom(delta) {
+        pixelsPerMeter = Math.max(20, Math.min(250, pixelsPerMeter + delta));
+        document.getElementById('scale-val').textContent = pixelsPerMeter;
+    }
+
+    // Görgős nagyítás a canvason
+    canvas.addEventListener('wheel', (e) => {
+        e.preventDefault();
+        changeZoom(e.deltaY < 0 ? 10 : -10);
+    });
+
+    // 3. Háttérrács (1 méteres körök) és a Robot kirajzolása
+    function drawRadarGrid() {
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Koncentrikus távolságkörök (1m, 2m, 3m, 4m...)
+        ctx.strokeStyle = '#21262d';
+        ctx.fillStyle = '#484f58';
+        ctx.font = '12px sans-serif';
+        ctx.lineWidth = 1;
+
+        for (let m = 1; m <= 10; m++) {
+            const radius = m * pixelsPerMeter;
+            ctx.beginPath();
+            ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.fillText(`${m}m`, cx + 4, cy - radius + 12);
+        }
+
+        // Tengelyvonalak
+        ctx.beginPath();
+        ctx.moveTo(0, cy); ctx.lineTo(canvas.width, cy);
+        ctx.moveTo(cx, 0); ctx.lineTo(cx, canvas.height);
+        ctx.stroke();
+
+        // Robot középpont és haladási irány (előre = felfelé)
+        ctx.fillStyle = '#58a6ff';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 8, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.strokeStyle = '#58a6ff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx, cy - 20);
+        ctx.stroke();
+    }
+
+    // 4. Feliratkozás a /scan témára
+    const scanListener = new ROSLIB.Topic({
+        ros: ros,
+        name: '/scan',
+        messageType: 'sensor_msgs/msg/LaserScan' // ROS 2 Jazzy formátum
+    });
+
+    scanListener.subscribe((msg) => {
+        drawRadarGrid();
+
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+
+        let validPoints = 0;
+        let minDistance = Infinity;
+
+        ctx.fillStyle = '#00ffcc';
+
+        for (let i = 0; i < msg.ranges.length; i++) {
+            const r = msg.ranges[i];
+
+            // Érvénytelen (végtelen vagy tartományon kívüli) mérések kiszűrése
+            if (r === null || isNaN(r) || r < msg.range_min || r > msg.range_max) {
+                continue;
+            }
+
+            validPoints++;
+            if (r < minDistance) minDistance = r;
+
+            // Szög kiszámítása (ROS koordináta-rendszer: X előre -> Canvas: -Y felfelé)
+            const angle = msg.angle_min + (i * msg.angle_increment);
+            const x = cx - (r * Math.sin(angle)) * pixelsPerMeter;
+            const y = cy - (r * Math.cos(angle)) * pixelsPerMeter;
+
+            ctx.fillRect(x - 1.5, y - 1.5, 3, 3);
+        }
+
+        document.getElementById('point-count').textContent = validPoints;
+        document.getElementById('min-dist').textContent = 
+            minDistance !== Infinity ? minDistance.toFixed(2) : '-';
+    });
+
+    // Kezdeti üres rács kirajzolása
+    drawRadarGrid();
+</script>
+
+</body>
+</html>
