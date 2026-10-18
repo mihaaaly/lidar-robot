@@ -1,0 +1,79 @@
+﻿* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #0d1117;
+    color: #c9d1d9;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+}
+header {
+    background-color: #161b22;
+    padding: 12px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #30363d;
+}
+header h1 { font-size: 1.2rem; color: #58a6ff; }
+.header-right { display: flex; gap: 12px; align-items: center; }
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    background-color: #21262d;
+    border: 1px solid #30363d;
+}
+.status-connected { color: #3fb950; border-color: #2ea043; }
+.status-mock { color: #d29922; border-color: #bb8009; }
+.status-error { color: #f85149; border-color: #da3633; }
+
+main { display: flex; flex: 1; position: relative; }
+#canvas-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #090d13;
+}
+canvas {
+    background-color: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+}
+.sidebar {
+    width: 300px;
+    background-color: #161b22;
+    border-left: 1px solid #30363d;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.card {
+    background-color: #21262d;
+    padding: 14px;
+    border-radius: 8px;
+    border: 1px solid #30363d;
+}
+.card h3 { font-size: 0.9rem; color: #8b949e; margin-bottom: 8px; }
+.stat-value { font-size: 1.3rem; font-weight: bold; color: #58a6ff; }
+.controls { display: flex; gap: 8px; margin-top: 8px; }
+button {
+    flex: 1;
+    padding: 8px 12px;
+    background-color: #238636;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: 0.2s;
+}
+button:hover { background-color: #2ea043; }
+.btn-mock { background-color: #9e6a03; }
+.btn-mock:hover { background-color: #bb8009; }
