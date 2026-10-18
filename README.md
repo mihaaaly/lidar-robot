@@ -56,30 +56,7 @@ The entire software stack—including the ROS 2 backend, Node-RED automation eng
 
 ### 4-Layer System Architecture on the Raspberry Pi 5
 
-```text
-+-------------------------------------------------------------------------+
-|                    CLIENT DEVICES (Laptop / Tablet / Phone)             |
-|   [ Browser: Web UI (:80) ]   [Node-RED (:1880)]   [Foxglove (:8765)]   |
-+-----------------|-----------------------|--------------------|----------+
-                  | HTTP & WS (:9090)     | HTTP               | WS
-+-----------------|-----------------------|--------------------|----------+
-| RASPBERRY PI 5  v                       v                    v          |
-|  4. WEB SERVER LAYER (Nginx - Port 80)                                  |
-|     - Serves static HTML/JS (roslibjs/ros2djs) UI from /web/public      |
-|                                                                         |
-|  3. AUTOMATION LAYER (Node-RED - Port 1880)                             |
-|     - Telemetry routing, battery monitor, "Go Home" logic, map manager  |
-|                                                                         |
-|  2. COMMUNICATION BRIDGE LAYER (Middleware Bridges)                     |
-|     - rosbridge_suite (Port 9090): WebSocket bridge for Web UI &        |
-|       Node-RED                                                          |
-|     - foxglove_bridge (Port 8765): 3D developer diagnostics             |
-|                                                                         |
-|  1. ROS 2 JAZZY CORE (Robot Backend)                                    |
-|     - Hardware: rplidar_ros (/scan), motor_driver, MPU6050 IMU          |
-|     - Localization & Nav: robot_localization (EKF), slam_toolbox, nav2  |
-+-------------------------------------------------------------------------+
-```
+<img width="500" height="1001" alt="Untitled diagram-2026-10-18-194754" src="https://github.com/user-attachments/assets/ad2d1692-350f-4aae-86bd-9822883ebfc3" />
 
 ### System Structure
 
@@ -106,6 +83,10 @@ The entire software stack—including the ROS 2 backend, Node-RED automation eng
 - Live `/scan` processing and rendering
 - "Go Home" functionality (triggering `navigate_to_pose` for the base point)
 - Map switching interface
+
+**5. Database Diagramm**
+<img width="1299" height="814" alt="Lidar_Robot_Diagram" src="https://github.com/user-attachments/assets/f7ff7ded-8d00-4e48-a89b-5ce751c377c6" />
+
 
 ---
 
