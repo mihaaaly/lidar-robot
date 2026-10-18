@@ -1,4 +1,4 @@
-﻿const statusEl = document.getElementById('conn-status');
+const statusEl = document.getElementById('conn-status');
 const canvas = document.getElementById('lidarCanvas');
 const ctx = canvas.getContext('2d');
 let pixelsPerMeter = 80;
@@ -6,28 +6,35 @@ let isMockMode = false;
 let mockInterval = null;
 let mockAngleOffset = 0;
 
-// 1. ROS 2 WebSocket kapcsolat (Éles robot mód)
 const wsHost = window.location.hostname || 'pi5-ros.local';
-const wsUrl = ws://:9090;
+const wsUrl = 'ws://' + wsHost + ':9090';
 let ros = null;
 
 function connectROS() {
     if (typeof ROSLIB === 'undefined') {
-        enableMockMode();
+        statusEl.textContent = '⚠️ roslib.min.js hiányzik! (Mock mód)';
+        toggleMockMode();
         return;
     }
     ros = new ROSLIB.Ros({ url: wsUrl });
 
     ros.on('connection', () => {
         if (!isMockMode) {
-            statusEl.textContent = 🟢 Élő kapcsolat ();
+            statusEl.textContent = '🟢 Élő kapcsolat (' + wsUrl + ')';
             statusEl.className = 'status-badge status-connected';
         }
     });
 
     ros.on('error', () => {
         if (!isMockMode) {
-            statusEl.textContent = 🔴 Robot nem elérhető (Kapcsold be a Mock módot!);
+            statusEl.textContent = '🔴 Robot nem elérhető (' + wsUrl + ')';
+            statusEl.className = 'status-badge status-error';
+        }
+    });
+
+    ros.on('close', () => {
+        if (!isMockMode) {
+            statusEl.textContent = '⚪ Kapcsolat bontva (' + wsUrl + ')';
             statusEl.className = 'status-badge status-error';
         }
     });
@@ -43,7 +50,6 @@ function connectROS() {
     });
 }
 
-// 2. Radar rács kirajzolása
 function drawRadarGrid() {
     const cx = canvas.width / 2;
     const cy = canvas.height / 2;
@@ -59,7 +65,7 @@ function drawRadarGrid() {
         ctx.beginPath();
         ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
         ctx.stroke();
-        ctx.fillText(${m}m, cx + 4, cy - radius + 12);
+        ctx.fillText(m + 'm', cx + 4, cy - radius + 12);
     }
 
     ctx.beginPath();
@@ -67,7 +73,6 @@ function drawRadarGrid() {
     ctx.moveTo(cx, 0); ctx.lineTo(cx, canvas.height);
     ctx.stroke();
 
-    // Robot középpont
     ctx.fillStyle = '#58a6ff';
     ctx.beginPath();
     ctx.arc(cx, cy, 8, 0, 2 * Math.PI);
@@ -81,7 +86,6 @@ function drawRadarGrid() {
     ctx.stroke();
 }
 
-// 3. Pontok kirajzolása (Éles és Szimulált módban is)
 function renderScan(msg) {
     drawRadarGrid();
     const cx = canvas.width / 2;
@@ -108,18 +112,16 @@ function renderScan(msg) {
     document.getElementById('min-dist').textContent = minDistance !== Infinity ? minDistance.toFixed(2) : '-';
 }
 
-// 4. Szimulált (Mock) Mód a Web Dizájnernek (Robot nélkül is működik!)
 function toggleMockMode() {
     isMockMode = !isMockMode;
     if (isMockMode) {
         statusEl.textContent = '🧪 Szimulált (Mock) Mód Aktív';
         statusEl.className = 'status-badge status-mock';
         mockInterval = setInterval(() => {
-            mockAngleOffset += 0.03;
+            mockAngleOffset += 0.05;
             const fakeRanges = [];
             for (let i = 0; i < 360; i++) {
                 const rad = (i * Math.PI) / 180;
-                // Szimulált szoba falak + egy mozgó tárgy
                 let dist = 3.2 + 0.4 * Math.sin(rad * 4);
                 if (i > 40 && i < 70) dist = 1.4 + 0.2 * Math.sin(mockAngleOffset);
                 fakeRanges.push(dist + (Math.random() * 0.05));
@@ -136,18 +138,30 @@ function toggleMockMode() {
         clearInterval(mockInterval);
         statusEl.textContent = '⏳ Visszatérés élő módba...';
         drawRadarGrid();
+        connectROS();
     }
 }
 
 function changeZoom(delta) {
     pixelsPerMeter = Math.max(20, Math.min(250, pixelsPerMeter + delta));
     document.getElementById('scale-val').textContent = pixelsPerMeter;
+    if (!isMockMode) drawRadarGrid();
 }
 
 canvas.addEventListener('wheel', (e) => {
     e.preventDefault();
     changeZoom(e.deltaY < 0 ? 10 : -10);
 });
+
+async function sendGoHome() {
+    try {
+        const res = await fetch('http://' + wsHost + ':1880/api/go-home', { method: 'POST' });
+        const data = await res.json();
+        alert('✅ Go Home elküldve! Térkép: ' + data.map + ' -> Cél: (' + data.target.x + ', ' + data.target.y + ')');
+    } catch (err) {
+        alert('❌ Node-RED nem elérhető (vagy Mock módban vagy)!');
+    }
+}
 
 drawRadarGrid();
 connectROS();

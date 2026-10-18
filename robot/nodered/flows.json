@@ -1,0 +1,240 @@
+[
+    {
+        "id": "1067a1ec312477de",
+        "type": "tab",
+        "label": "Flow 1",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "tab_robot_core",
+        "type": "tab",
+        "label": "LiDAR Robot - Core & SQLite",
+        "disabled": false,
+        "info": "On-Board Edge Automation Layer"
+    },
+    {
+        "id": "ws_rosbridge_client",
+        "type": "websocket-client",
+        "path": "ws://127.0.0.1:9090",
+        "tls": "",
+        "wholemsg": "false",
+        "hb": "0",
+        "subprotocol": ""
+    },
+    {
+        "id": "sqlite_robot_db",
+        "type": "sqlitedb",
+        "db": "/home/admin/lidar-robot/robot/data/robot.db",
+        "mode": "RWC"
+    },
+    {
+        "id": "inject_init_map",
+        "type": "inject",
+        "z": "tab_robot_core",
+        "name": "1. Alapértelmezett Térkép & Bázispont Mentése",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "INSERT OR IGNORE INTO maps (map_name, map_file, home_x, home_y, home_theta, is_active) VALUES ('Labor_Alapterkep', '/home/admin/lidar-robot/robot/maps/lab.yaml', 1.25, -0.50, 0.0, 1);",
+        "x": 260,
+        "y": 100,
+        "wires": [
+            [
+                "sqlite_exec_init"
+            ]
+        ]
+    },
+    {
+        "id": "sqlite_exec_init",
+        "type": "sqlite",
+        "z": "tab_robot_core",
+        "mydb": "sqlite_robot_db",
+        "sqlquery": "msg.topic",
+        "sql": "",
+        "name": "robot.db (maps INSERT)",
+        "x": 590,
+        "y": 100,
+        "wires": [
+            [
+                "debug_db_out"
+            ]
+        ]
+    },
+    {
+        "id": "inject_go_home",
+        "type": "inject",
+        "z": "tab_robot_core",
+        "name": "2. 🏠 GO HOME Teszt (Bázispont lekérése)",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "SELECT * FROM maps WHERE is_active = 1 LIMIT 1;",
+        "x": 240,
+        "y": 200,
+        "wires": [
+            [
+                "sqlite_get_home"
+            ]
+        ]
+    },
+    {
+        "id": "sqlite_get_home",
+        "type": "sqlite",
+        "z": "tab_robot_core",
+        "mydb": "sqlite_robot_db",
+        "sqlquery": "msg.topic",
+        "sql": "",
+        "name": "Aktív Bázispont Lekérése",
+        "x": 540,
+        "y": 200,
+        "wires": [
+            [
+                "func_build_goal_pose"
+            ]
+        ]
+    },
+    {
+        "id": "func_build_goal_pose",
+        "type": "function",
+        "z": "tab_robot_core",
+        "name": "/goal_pose JSON & Log építése",
+        "func": "if (!msg.payload || msg.payload.length === 0) {\n    node.warn(\"Nincs aktív térkép az adatbázisban!\");\n    return null;\n}\n\nconst activeMap = msg.payload[0];\nconst x = activeMap.home_x;\nconst y = activeMap.home_y;\nconst theta = activeMap.home_theta;\n\n// 1. kimenet: rosbridge /goal_pose (geometry_msgs/msg/PoseStamped)\nconst rosMsg = {\n    op: \"publish\",\n    topic: \"/goal_pose\",\n    type: \"geometry_msgs/msg/PoseStamped\",\n    msg: {\n        header: {\n            frame_id: \"map\"\n        },\n        pose: {\n            position: { x: x, y: y, z: 0.0 },\n            orientation: {\n                x: 0.0,\n                y: 0.0,\n                z: Math.sin(theta / 2.0),\n                w: Math.cos(theta / 2.0)\n            }\n        }\n    }\n};\n\n// 2. kimenet: Naplózás a system_logs táblába\nconst logMsg = {\n    topic: `INSERT INTO system_logs (level, source, message) VALUES ('INFO', 'nodered', 'Go Home indítva a (${x}, ${y}) bázispontra (${activeMap.map_name})');`\n};\n\nreturn [ { payload: JSON.stringify(rosMsg) }, logMsg ];",
+        "outputs": 2,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 810,
+        "y": 200,
+        "wires": [
+            [
+                "ws_out_rosbridge",
+                "debug_db_out"
+            ],
+            [
+                "sqlite_log_insert"
+            ]
+        ]
+    },
+    {
+        "id": "ws_out_rosbridge",
+        "type": "websocket out",
+        "z": "tab_robot_core",
+        "name": "rosbridge (:9090)",
+        "server": "",
+        "client": "ws_rosbridge_client",
+        "x": 1090,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "sqlite_log_insert",
+        "type": "sqlite",
+        "z": "tab_robot_core",
+        "mydb": "sqlite_robot_db",
+        "sqlquery": "msg.topic",
+        "sql": "",
+        "name": "system_logs INSERT",
+        "x": 1100,
+        "y": 240,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "http_in_maps",
+        "type": "http in",
+        "z": "tab_robot_core",
+        "name": "GET /api/maps",
+        "url": "/api/maps",
+        "method": "get",
+        "upload": false,
+        "swaggerDoc": "",
+        "x": 150,
+        "y": 320,
+        "wires": [
+            [
+                "func_query_all_maps"
+            ]
+        ]
+    },
+    {
+        "id": "func_query_all_maps",
+        "type": "function",
+        "z": "tab_robot_core",
+        "name": "SELECT maps & logs",
+        "func": "msg.topic = \"SELECT * FROM maps;\";\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "x": 360,
+        "y": 320,
+        "wires": [
+            [
+                "sqlite_api_maps"
+            ]
+        ]
+    },
+    {
+        "id": "sqlite_api_maps",
+        "type": "sqlite",
+        "z": "tab_robot_core",
+        "mydb": "sqlite_robot_db",
+        "sqlquery": "msg.topic",
+        "sql": "",
+        "name": "robot.db",
+        "x": 560,
+        "y": 320,
+        "wires": [
+            [
+                "http_resp_maps"
+            ]
+        ]
+    },
+    {
+        "id": "http_resp_maps",
+        "type": "http response",
+        "z": "tab_robot_core",
+        "name": "JSON Válasz",
+        "statusCode": "200",
+        "headers": {
+            "Access-Control-Allow-Origin": "*",
+            "Content-Type": "application/json"
+        },
+        "x": 760,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "debug_db_out",
+        "type": "debug",
+        "z": "tab_robot_core",
+        "name": "Kimenet / Debug",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1080,
+        "y": 100,
+        "wires": []
+    }
+]
