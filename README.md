@@ -84,7 +84,7 @@ The entire software stack—including the ROS 2 backend, Node-RED automation eng
 - "Go Home" functionality (triggering `navigate_to_pose` for the base point)
 - Map switching interface
 
-**5. Database Diagramm**
+**5. Database Diagramm Data-Flow Diagram**
 <img width="1299" height="814" alt="Lidar_Robot_Diagram" src="https://github.com/user-attachments/assets/f7ff7ded-8d00-4e48-a89b-5ce751c377c6" />
 
 
