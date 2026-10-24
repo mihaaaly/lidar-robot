@@ -26,7 +26,7 @@
     {
         "id": "sqlite_robot_db",
         "type": "sqlitedb",
-        "db": "/home/admin/lidar-robot/robot/data/robot.db",
+        "db": "/home/admin/lidar-robot/lidar-robot/robot/data/robot.db",
         "mode": "RWC"
     },
     {
@@ -44,7 +44,7 @@
         "crontab": "",
         "once": false,
         "onceDelay": 0.1,
-        "topic": "INSERT OR IGNORE INTO maps (map_name, map_file, home_x, home_y, home_theta, is_active) VALUES ('Labor_Alapterkep', '/home/admin/lidar-robot/robot/maps/lab.yaml', 1.25, -0.50, 0.0, 1);",
+        "topic": "INSERT OR IGNORE INTO maps (map_name, map_file, home_x, home_y, home_theta, is_active) VALUES ('Labor_Alapterkep', '/home/admin/lidar-robot/lidar-robot/robot/maps/lab.yaml', 1.25, -0.50, 0.0, 1);",
         "x": 260,
         "y": 100,
         "wires": [
