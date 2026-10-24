@@ -19,13 +19,22 @@
         { radius: 240, label: "3 m" }
     ];
 
-    var scanPoints = Array.isArray(window.SCAN_POINTS) ? window.SCAN_POINTS : [];
+    var staticScanPoints = Array.isArray(window.SCAN_POINTS) ? window.SCAN_POINTS : [];
+    var scanPoints = staticScanPoints.slice();
     var closestDistance = Math.hypot(
         CLOSEST_POINT.x - CX,
         CLOSEST_POINT.y - CY
     ) / BASE_PPM;
     var closestText = closestDistance.toFixed(2).replace(".", ",");
     var zoomIndex = DEFAULT_ZOOM_INDEX;
+    var feedTag = "SAMPLE / 001";
+    var feedLabel = "LOCAL VIEW";
+    var isDemo = true;
+    var liveClosest = null;
+    var ros = null;
+    var scanTopic = null;
+    var wsHost = window.location.hostname || "pi5-ros.local";
+    var rosUrl = "ws://" + wsHost + ":9090";
 
     var elements = {
         svg: document.getElementById("radar-svg"),
@@ -42,7 +51,9 @@
         navNote: document.getElementById("nav-note"),
         statusLabel: document.getElementById("status-label"),
         statusCopy: document.getElementById("status-copy"),
-        statusRight: document.getElementById("status-right")
+        statusRight: document.getElementById("status-right"),
+        radarBadge: document.getElementById("radar-badge"),
+        dataSourceText: document.getElementById("data-source-text")
     };
 
     function scaled(value, origin, zoom) {
@@ -51,6 +62,17 @@
 
     function fixed(value) {
         return (Math.round(value * 100) / 100).toFixed(2);
+    }
+
+    function formatMeters(value) {
+        return value.toFixed(2).replace(".", ",");
+    }
+
+    function getClosest() {
+        if (liveClosest) {
+            return { x: liveClosest.x, y: liveClosest.y, text: formatMeters(liveClosest.meters) };
+        }
+        return { x: CLOSEST_POINT.x, y: CLOSEST_POINT.y, text: closestText };
     }
 
     function buildPoints(zoom) {
@@ -112,8 +134,9 @@
     }
 
     function buildCallout(zoom) {
-        var hx = scaled(CLOSEST_POINT.x, CX, zoom);
-        var hy = scaled(CLOSEST_POINT.y, CY, zoom);
+        var closest = getClosest();
+        var hx = scaled(closest.x, CX, zoom);
+        var hy = scaled(closest.y, CY, zoom);
         var elbowX = hx + 42;
         var elbowY = hy - 23;
         var endX = elbowX + 76;
@@ -131,7 +154,7 @@
             '<polyline points="' + line + '" fill="none" stroke="#5BD9ED" stroke-width="1" stroke-dasharray="4 4" stroke-dashoffset="1.5"/>',
             '<circle cx="' + fixed(hx) + '" cy="' + fixed(hy) + '" r="5.5" fill="none" stroke="#5BD9ED" stroke-width="1.5"/>',
             '<text class="radar-text--accent" x="' + fixed(labelX) + '" y="' + fixed(labelY) + '">' +
-                closestText + " m</text>",
+                closest.text + " m</text>",
             "</g>"
         ].join("");
     }
@@ -183,8 +206,8 @@
             '<line x1="32" y1="320" x2="992" y2="320"/>',
             '</g>',
             '<text class="radar-text--muted" x="509" y="362" text-anchor="middle">ROBOT</text>',
-            '<text x="24" y="32">SAMPLE / 001</text>',
-            '<text x="24" y="53">LOCAL VIEW</text>',
+            '<text x="24" y="32">' + feedTag + '</text>',
+            '<text x="24" y="53">' + feedLabel + '</text>',
             '<text class="radar-direction" x="515" y="33" text-anchor="middle">0° / FORWARD</text>',
             '<text class="radar-direction" x="978" y="340" text-anchor="end">90°</text>',
             '<text class="radar-direction" x="28" y="340">270°</text>',
@@ -192,9 +215,10 @@
             buildScaleBar(zoom, ppm)
         ].join("");
 
+        var closest = getClosest();
         elements.svg.innerHTML = markup;
         elements.pointCount.textContent = String(scanPoints.length || 720);
-        elements.closestDistance.textContent = closestText;
+        elements.closestDistance.textContent = closest.text;
         elements.scaleValue.textContent = String(ppm);
         elements.zoomIn.disabled = zoomIndex >= ZOOM_LEVELS.length - 1;
         elements.zoomOut.disabled = zoomIndex <= 0;
@@ -202,7 +226,7 @@
             "aria-label",
             "Illustrative LiDAR scan of a room with " + (scanPoints.length || 720) +
             " measurement points, the robot at the origin and the closest object " +
-            closestText.replace(",", ".") + " metres away. Scale: " + ppm + " pixels per metre."
+            closest.text.replace(",", ".") + " metres away. Scale: " + ppm + " pixels per metre."
         );
     }
 
@@ -217,12 +241,22 @@
         renderRadar();
     }
 
-    function setMode(isDemo) {
-        elements.modeToggle.setAttribute("aria-checked", String(isDemo));
-        elements.connectionBadge.classList.toggle("is-live", !isDemo);
-        elements.statusLabel.classList.toggle("is-live", !isDemo);
+    function setMode(isDemoMode) {
+        isDemo = isDemoMode;
+        elements.modeToggle.setAttribute("aria-checked", String(isDemoMode));
+        elements.connectionBadge.classList.toggle("is-live", !isDemoMode);
+        elements.statusLabel.classList.toggle("is-live", !isDemoMode);
 
-        if (isDemo) {
+        if (isDemoMode) {
+            disconnectROS();
+            scanPoints = staticScanPoints.slice();
+            liveClosest = null;
+            feedTag = "SAMPLE / 001";
+            feedLabel = "LOCAL VIEW";
+            elements.radarBadge.textContent = "DEMO";
+            elements.radarBadge.classList.remove("badge--live");
+            elements.radarBadge.classList.add("badge--demo");
+            elements.dataSourceText.textContent = "Illustrative sample data — not live measurement";
             elements.modeLabel.textContent = "Design / Mock Mode";
             elements.connectionText.textContent = "Demo mode · No live connection";
             elements.statusLabel.textContent = "DEMO SESSION";
@@ -230,14 +264,22 @@
             elements.statusRight.textContent = "ROS /scan · Live data stream disabled";
             elements.navNote.textContent = "In demo mode, commands cannot be sent. A live robot connection is required.";
         } else {
-            elements.modeLabel.textContent = "Live Mode (offline)";
-            elements.connectionText.textContent = "Live mode · No live connection";
+            feedTag = "LIVE / SCAN";
+            feedLabel = "LIVE VIEW";
+            elements.radarBadge.textContent = "LIVE";
+            elements.radarBadge.classList.remove("badge--demo");
+            elements.radarBadge.classList.add("badge--live");
+            elements.dataSourceText.textContent = "Live measurement via ROS bridge (" + rosUrl + ")";
+            elements.modeLabel.textContent = "Live Mode (connecting…)";
+            elements.connectionText.textContent = "Connecting to " + rosUrl + "…";
             elements.statusLabel.textContent = "LIVE OFFLINE";
             elements.statusCopy.textContent = "No ROS bridge connection. The sample scan is still shown.";
             elements.statusRight.textContent = "ROS /scan · Bridge unreachable";
             elements.navNote.textContent = "No live robot connection. Commands remain disabled.";
+            connectROS();
         }
 
+        renderRadar();
         elements.goHome.disabled = true;
         elements.goHome.title = "Requires a live robot connection.";
     }
@@ -253,6 +295,136 @@
     elements.zoomOut.addEventListener("click", function () {
         changeZoom(-1);
     });
+
+    elements.goHome.addEventListener("click", function () {
+        if (!isDemo && ros) {
+            sendGoHome();
+        }
+    });
+
+    function setConnectionState(connected) {
+        if (connected) {
+            elements.connectionBadge.classList.add("is-live");
+            elements.statusLabel.classList.add("is-live");
+            elements.connectionText.textContent = "Live connection · " + rosUrl;
+            elements.statusLabel.textContent = "LIVE";
+            elements.statusCopy.textContent = "Receiving live LiDAR /scan telemetry.";
+            elements.statusRight.textContent = "ROS /scan · Live data stream";
+            elements.navNote.textContent = "Live robot connected. Base point navigation is available.";
+            elements.goHome.disabled = false;
+            elements.goHome.title = "Return the robot to its base point.";
+        } else {
+            elements.goHome.disabled = true;
+            elements.goHome.title = "Requires a live robot connection.";
+        }
+    }
+
+    function connectROS() {
+        if (typeof ROSLIB === "undefined") {
+            elements.connectionText.textContent = "roslib.js not loaded · No live connection";
+            elements.statusRight.textContent = "ROS /scan · roslib missing";
+            return;
+        }
+
+        if (ros) {
+            return;
+        }
+
+        ros = new ROSLIB.Ros({ url: rosUrl });
+
+        ros.on("connection", function () {
+            if (!isDemo) {
+                setConnectionState(true);
+            }
+        });
+
+        ros.on("error", function () {
+            if (!isDemo) {
+                elements.connectionText.textContent = "Robot unreachable (" + rosUrl + ")";
+                elements.statusLabel.textContent = "LIVE OFFLINE";
+                elements.statusCopy.textContent = "Could not reach the ROS bridge. The sample scan is shown.";
+                elements.statusRight.textContent = "ROS /scan · Bridge unreachable";
+                elements.navNote.textContent = "No live robot connection. Commands remain disabled.";
+                elements.goHome.disabled = true;
+            }
+        });
+
+        ros.on("close", function () {
+            if (!isDemo) {
+                elements.connectionText.textContent = "Connection closed (" + rosUrl + ")";
+                elements.statusLabel.textContent = "LIVE OFFLINE";
+                elements.statusCopy.textContent = "No ROS bridge connection. The sample scan is still shown.";
+                elements.statusRight.textContent = "ROS /scan · Bridge unreachable";
+                elements.navNote.textContent = "No live robot connection. Commands remain disabled.";
+                elements.goHome.disabled = true;
+            }
+        });
+
+        scanTopic = new ROSLIB.Topic({
+            ros: ros,
+            name: "/scan",
+            messageType: "sensor_msgs/msg/LaserScan"
+        });
+
+        scanTopic.subscribe(onScanMessage);
+    }
+
+    function disconnectROS() {
+        if (scanTopic) {
+            scanTopic.unsubscribe();
+            scanTopic = null;
+        }
+        if (ros) {
+            ros.close();
+            ros = null;
+        }
+    }
+
+    function onScanMessage(msg) {
+        if (isDemo || !msg || !msg.ranges) {
+            return;
+        }
+
+        var points = [];
+        var minDistance = Infinity;
+        var minPoint = null;
+        var angle = msg.angle_min;
+
+        for (var i = 0; i < msg.ranges.length; i += 1) {
+            var r = msg.ranges[i];
+            if (r === null || r === undefined || isNaN(r) || r < msg.range_min || r > msg.range_max) {
+                angle += msg.angle_increment;
+                continue;
+            }
+
+            var x = CX - (r * Math.sin(angle)) * BASE_PPM;
+            var y = CY - (r * Math.cos(angle)) * BASE_PPM;
+            points.push([x, y]);
+
+            if (r < minDistance) {
+                minDistance = r;
+                minPoint = { x: x, y: y };
+            }
+
+            angle += msg.angle_increment;
+        }
+
+        scanPoints = points;
+        liveClosest = minPoint ? { x: minPoint.x, y: minPoint.y, meters: minDistance } : null;
+        renderRadar();
+    }
+
+    function sendGoHome() {
+        fetch("http://" + wsHost + ":1880/api/go-home", { method: "POST" })
+            .then(function (res) { return res.json(); })
+            .then(function (data) {
+                var target = data && data.target ? data.target : { x: "-", y: "-" };
+                alert("✅ Go Home sent! Target: (" + target.x + ", " + target.y + ")");
+            })
+            .catch(function () {
+                alert("❌ Node-RED unreachable (or Go Home endpoint missing).");
+            });
+    }
 
     setMode(true);
     renderRadar();

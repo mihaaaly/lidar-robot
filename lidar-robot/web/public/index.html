@@ -46,7 +46,7 @@
                 <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
                     <path d="M8.75073 1.24951V4.99981C8.75064 5.20951 8.8033 5.41585 8.90385 5.59986L10.9674 9.37516M8.75073 1.24951H6.25075M8.75073 1.24951H9.68793M10.9674 9.37516L12.3476 11.9004C12.4517 12.0908 12.5045 12.305 12.5008 12.522C12.4971 12.739 12.4369 12.9513 12.3262 13.138C12.2155 13.3246 12.0582 13.4793 11.8696 13.5867C11.681 13.6941 11.4677 13.7506 11.2507 13.7505H3.75077C3.53376 13.7506 3.32047 13.6941 3.13189 13.5867C2.94332 13.4793 2.78595 13.3246 2.67527 13.138C2.56459 12.9513 2.50442 12.739 2.50067 12.522C2.49693 12.305 2.54974 12.0908 2.6539 11.9004L4.03412 9.37516M10.9674 9.37516H4.03412M10.9674 9.37516H10.9674M4.03412 9.37516L6.09762 5.59986C6.19818 5.41585 6.25084 5.20951 6.25075 4.99981V1.24951M4.03412 9.37516H4.03368M6.25075 1.24951H5.31297" stroke-width="1.6" stroke-linecap="round" stroke="#E4B96D"/>
                 </svg>
-                <span>Illustrative sample data — not live measurement</span>
+                <span id="data-source-text">Illustrative sample data — not live measurement</span>
             </div>
         </div>
 
@@ -61,7 +61,7 @@
                     </div>
                     <div class="radar-meta">
                         <span class="mono">360°</span>
-                        <span class="badge badge--demo">DEMO</span>
+                        <span class="badge badge--demo" id="radar-badge">DEMO</span>
                     </div>
                 </div>
 
@@ -182,6 +182,7 @@
             <span class="status-right mono" id="status-right">ROS /scan · Live data stream disabled</span>
         </footer>
     </div>
+    <script src="js/roslib.min.js"></script>
     <script src="src/scan-points.js"></script>
     <script src="src/app.js"></script>
 </body>

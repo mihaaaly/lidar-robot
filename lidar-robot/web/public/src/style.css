@@ -346,6 +346,11 @@ svg {
     color: var(--amber);
 }
 
+.badge--live {
+    background: var(--accent-deep);
+    color: var(--accent);
+}
+
 .radar-viewport {
     position: relative;
     width: 100%;
