@@ -54,9 +54,14 @@ The entire software stack—including the ROS 2 backend, Node-RED automation eng
 - **Node-RED** for telemetry routing, automation workflows, and bridging ROS 2 data with high-level system logic
 - **Nginx** for serving the static web control interface (Web UI) directly from the Raspberry Pi
 
-### 4-Layer System Architecture on the Raspberry Pi 5
+### Data Flow Diagram
 
 <img width="500" height="1001" alt="Untitled diagram-2026-10-18-194754" src="https://github.com/user-attachments/assets/ad2d1692-350f-4aae-86bd-9822883ebfc3" />
+
+### Data Flow Diagram
+
+<img width="800" height="800" alt="architektura_kozepre_igazitva" src="https://github.com/user-attachments/assets/d2fa2cfc-0e5e-481e-882b-d3510a1523f1" />
+
 
 ### System Structure
 
@@ -85,8 +90,8 @@ The entire software stack—including the ROS 2 backend, Node-RED automation eng
 - Map switching interface
 
 **5. Database Diagramm Data-Flow Diagram**
-<img width="1299" height="814" alt="Lidar_Robot_Diagram" src="https://github.com/user-attachments/assets/f7ff7ded-8d00-4e48-a89b-5ce751c377c6" />
 
+<img width="1305" height="1116" alt="Lidar_Robot_Diagram" src="https://github.com/user-attachments/assets/04dbe159-63c5-4895-8526-e06647dc9a67" />
 
 ---
 
