@@ -1,0 +1,16 @@
+[Unit]
+Description=LiDAR Robot - ROS 2 bringup (RPLiDAR + rosbridge + foxglove)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=admin
+Environment=HOME=/home/admin
+# Disztro szerint: humble vagy jazzy (es ha forrasbol epitettel, a workspace setup.bash is kell)
+ExecStart=/bin/bash -c 'source /opt/ros/humble/setup.bash && exec ros2 launch /home/admin/lidar-robot/lidar-robot/robot/launch/robot_bringup.launch.py'
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
