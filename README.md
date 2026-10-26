@@ -58,7 +58,7 @@ The entire software stack—including the ROS 2 backend, Node-RED automation eng
 
 <img width="500" height="1001" alt="Untitled diagram-2026-10-18-194754" src="https://github.com/user-attachments/assets/ad2d1692-350f-4aae-86bd-9822883ebfc3" />
 
-### Data Flow Diagram
+### Architecture Diagram
 
 <img width="800" height="800" alt="architektura_kozepre_igazitva" src="https://github.com/user-attachments/assets/d2fa2cfc-0e5e-481e-882b-d3510a1523f1" />
 
