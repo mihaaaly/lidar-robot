@@ -60,7 +60,8 @@ The entire software stack—including the ROS 2 backend, Node-RED automation eng
 
 ### Architecture Diagram
 
-<img width="800" height="800" alt="architektura_kozepre_igazitva" src="https://github.com/user-attachments/assets/d2fa2cfc-0e5e-481e-882b-d3510a1523f1" />
+<img width="800" height="800" alt="architecture" src="https://github.com/user-attachments/assets/7c8468b4-2667-44bc-9b1b-023b3e8622e6" />
+
 
 
 ### System Structure
