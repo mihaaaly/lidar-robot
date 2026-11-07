@@ -16,6 +16,7 @@
     --text-dim: #7c8c97;
     --accent: #5bd9ed;
     --accent-deep: #17333b;
+    --accent-ink: #102329;
     --amber: #e4b96d;
     --amber-deep: #30291e;
     --font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -112,10 +113,10 @@ svg {
 }
 
 .brand-title {
-    font-size: 17px;
+    font-size: 18px;
     font-weight: 600;
     line-height: 1.2;
-    letter-spacing: 0.015em;
+    letter-spacing: 0;
     white-space: nowrap;
 }
 
@@ -215,6 +216,45 @@ svg {
     flex: 0 0 6px;
     border-radius: 50%;
     background: currentColor;
+}
+
+/* Ghost sign-out button (auth slice). */
+.sign-out {
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 13px;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.sign-out:hover {
+    background: #242c31;
+    border-color: #3a454d;
+    color: var(--text);
+}
+
+/* No-JS banner for the demo guard (critical CSS lives inline in index.html). */
+.noscript-banner {
+    display: block;
+    margin: 0;
+    padding: 12px 20px;
+    background: var(--amber-deep);
+    color: var(--amber);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.noscript-banner a {
+    color: var(--accent);
 }
 
 /* ------------------------------------------------------- Workspace title */

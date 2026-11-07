@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="auth-pending">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,8 +9,90 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="src/style.css">
+    <style>
+        /* Critical: hide the dashboard until the demo guard has run. */
+        html.auth-pending body { visibility: hidden; }
+        html.auth-pending noscript { visibility: visible; }
+    </style>
+    <script>
+        /*
+          Client-side session guard.
+
+          In the local backend deployment the real gate is server-side: the
+          Node service only serves this file when the HttpOnly session cookie
+          is valid. This inline guard is the fallback UX gate for the static
+          demo deployment on the Raspberry Pi.
+
+          ⚠️  The static demo guard is NOT a security control: anyone can skip
+          it by disabling JS or editing storage. Real protection is the
+          server-side session (HttpOnly cookie, hashed passwords, rate limit).
+
+          Deliberately standalone (does not load session.js) so a missing
+          script cannot lock the dashboard out. The schema is duplicated in
+          src/session.js — if the key or shape changes, update BOTH places.
+        */
+        (function () {
+            var KEY = "lidar.session";
+            var HINT = "lidar_auth";
+
+            function read(store) {
+                try {
+                    var raw = store.getItem(KEY);
+                    var session;
+
+                    if (!raw) {
+                        return null;
+                    }
+
+                    session = JSON.parse(raw);
+
+                    if (!session || typeof session.email !== "string") {
+                        return null;
+                    }
+
+                    if (session.expiresAt && session.expiresAt <= Date.now()) {
+                        store.removeItem(KEY);
+                        return null;
+                    }
+
+                    return session;
+                } catch (error) {
+                    return null;
+                }
+            }
+
+            function hasHintCookie() {
+                try {
+                    return new RegExp("(?:^|;\\s*)" + HINT + "=1(?:;|$)").test(document.cookie || "");
+                } catch (error) {
+                    return false;
+                }
+            }
+
+            var ok = false;
+
+            try {
+                ok = !!(read(window.localStorage) || read(window.sessionStorage) || hasHintCookie());
+            } catch (error) {
+                ok = false;
+            }
+
+            if (!ok) {
+                window.location.replace("auth.html#/auth");
+                return;
+            }
+
+            document.documentElement.classList.remove("auth-pending");
+        })();
+    </script>
 </head>
 <body>
+    <noscript>
+        <div class="noscript-banner" role="alert">
+            This demo requires JavaScript. Enable JavaScript, or open the
+            <a href="auth.html">sign-in page</a>.
+        </div>
+    </noscript>
     <div class="app">
         <header class="app-header">
             <div class="brand">
@@ -34,6 +116,7 @@
                     <span class="status-dot" aria-hidden="true"></span>
                     <span id="connection-text">Demo mode · No live connection</span>
                 </div>
+                <button class="sign-out" id="sign-out" type="button">Sign out</button>
             </div>
         </header>
 
@@ -183,6 +266,7 @@
         </footer>
     </div>
     <script src="js/roslib.min.js"></script>
+    <script src="src/session.js"></script>
     <script src="src/scan-points.js"></script>
     <script src="src/app.js"></script>
 </body>
