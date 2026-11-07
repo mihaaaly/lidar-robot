@@ -1,25 +1,36 @@
 # Auth / login startpage — implementáció
 
-A web UI elé kerülő **demo auth réteg**: belépő (Start), bejelentkező (Login) és
+A web UI elé kerülő auth réteg: belépő (Start), bejelentkező (Login) és
 regisztrációs (Register) képernyő, a dashboard pedig bejelentkezés nélkül nem
-nyílik meg.
+nyílik meg. Két módban működik:
 
-Terv: [`docs/auth-startpage-plan.md`](auth-startpage-plan.md) (v2, `web-ui-init`).
+- **Server mód** (ajánlott): a `server/` Node szolgáltatás adja a valódi,
+  szerveroldali sessiont (SQLite + scrypt + HttpOnly cookie), és a védett
+  oldalakat is ő gate-eli. Részletek: [`server/README.md`](../server/README.md).
+- **Statikus demó** (fallback): nincs backend, a session kliensoldali, csak
+  UX-kapu.
+
+Terv: [`docs/auth-startpage-plan.md`](auth-startpage-plan.md) (v2, `web-ui-init`),
+backend terv: [`docs/auth-backend-plan.md`](auth-backend-plan.md).
 
 ---
 
 ## ⚠️ Biztonsági nyilatkozat
 
-A **statikus demo** (a Pi-n futó `web/public`) sessionje kliensoldali, ezért
-**nem biztonsági kontroll**, csak demo/UX kapu:
+**Statikus demó** (pl. `python3 -m http.server` a `web/public`-on): a session
+kliensoldali, ezért **nem biztonsági kontroll**, csak demo/UX kapu:
 
 - bárki megnyithatja az `index.html`-t letiltott JavaScripttel;
 - a `localStorage` / `sessionStorage` kézzel szerkeszthető;
 - a session csak e-mailt, nevet és időbélyegeket tartalmaz (jelszót soha).
 
-Valódi védelemhez szerveroldali megoldás kell: szerveroldali session, HttpOnly
-cookie, jelszó-hash, rate limit, TLS. Ez még nem része a repónak — a UI design
-befejezése után kerül sorra.
+**Server mód** (`server/`, `lidar-auth.service`): a valódi kapu a szerveroldali,
+HttpOnly `lidar_session` cookie és az SQLite session tábla. A jelszó scrypt
+hash-ként tárolódik, a token csak SHA-256 hash-ként, rate limit és CSRF
+ellenőrzés védi a POST-okat. A kliensoldali session ilyenkor csak UX-hint.
+
+TLS továbbra sincs: a service megbízható LAN-ra készült. HTTPS-hez reverse proxy
+(Nginx) és `COOKIE_SECURE=1` kell.
 
 ---
 
@@ -38,13 +49,36 @@ web/public/
     ├── maps.css                  # Map Selection layout
     ├── maps-data.js              # demo térképkönyvtár (geometria + metaadat)
     ├── maps.js                   # kiválasztás, keresés, szűrés, renderelés
-    ├── session.js                # window.Session storage helperek
-    ├── auth.js                   # router, validáció, session írás
+    ├── session.js                # window.Session storage helperek + backend detektálás
+    ├── auth.js                   # router, validáció, server/demo ág
     └── app.js                    # demo mód visszaolvasás + sign out
+
+server/                           # zero-dependency Node auth service + static host
+├── server.js                     # belépési pont
+├── app.js                        # API router + static gate
+├── lib/                          # config, db, users, passwords, sessions,
+│                                 # cookies, validate, ratelimit, security, static, http, log
+├── bin/users.js                  # admin CLI (add, list, passwd, remove, backup)
+└── test/                         # node:test unit + API tesztek
+
+deploy/
+├── systemd/lidar-auth.service    # a Node service unitja (8080)
+├── systemd/webui.service         # statikus demó fallback (python, 8080)
+├── lidar-auth.env.example        # /etc/lidar-auth.env minta
+└── lidar-auth-users.sh           # admin CLI wrapper a Pi-n
 ```
 
-Nincs build, nincs npm dependency: a fájlok statikusan tölthetők
-(`python3 -m http.server 8080` vagy Nginx).
+Nincs build és nincs npm dependency: a frontend statikusan tölthető, a backend
+csak a Node beépített moduljait használja (`node:http`, `node:sqlite`,
+`node:crypto`), Node >= 22.16 alatt.
+
+Helyi futtatás szerver móddal:
+
+```bash
+cd lidar-robot/server
+AUTH_PORT=8787 node server.js
+# http://127.0.0.1:8787/auth.html#/auth
+```
 
 ---
 
@@ -110,6 +144,40 @@ A storage kulcsai:
 | `requireAuth()` | nincs session → `location.replace("auth.html#/auth")` |
 | `getDemoMode()` / `setDemoMode(v)` | demo mód, default `true` |
 
+### Server mód (a `server/` service-szel)
+
+A mód detektálása: a `session.js` csak akkor hívja a `GET /api/auth/health`-et,
+ha a `lidar_backend=1` marker cookie jelen van, és csak akkor vált server módra,
+ha a válasz `service === "lidar-auth"`. Marker nélkül a statikus demó marad.
+
+| Cookie | HttpOnly | Tartalom |
+| :--- | :---: | :--- |
+| `lidar_session` | igen | nyers session token (32 byte base64url); a DB csak SHA-256 hash-t tárol |
+| `lidar_auth` | nem | `1` hint, hogy a frontend guard tudja: van server session |
+| `lidar_backend` | nem | `1` marker, 1 nap; minden válaszon frissül |
+
+Session hossz: remember be → 7 nap (cookie `Max-Age` + DB), ki → 24 óra és
+böngésző-session cookie. A lejárat **abszolút**, nincs sliding; felhasználónként
+legfeljebb 10 session, a legrégebbi kiesik. A DB session rekord a token
+SHA-256 hash-jét tárolja, a nyers token csak a cookie-ban van.
+
+API (minden válasz JSON, `no-store`):
+
+| Metódus | Útvonal | Leírás |
+| :--- | :--- | :--- |
+| `GET`/`HEAD` | `/api/auth/health` | `{service:"lidar-auth",status:"ok",version,time}` |
+| `POST` | `/api/auth/register` | `{name,email,password,consent}` → `201 {user}` |
+| `POST` | `/api/auth/login` | `{email,password,remember}` → `200 {user}` |
+| `GET`/`HEAD` | `/api/auth/session` | `{authenticated,user?,expiresAt?}` |
+| `POST` | `/api/auth/logout` | idempotens `200 {ok:true}` |
+
+Hibakódok, amiket a UI kezel: `400 validation_error` (mezőhibák), `401 invalid_credentials`, `403 registration_disabled`, `403 forbidden_origin`, `409 email_taken`, `413 payload_too_large`, `415 unsupported_media_type`, `429 rate_limited` + `Retry-After`, `500 internal_error`.
+
+A védett oldalakat (`/`, `/index.html`, `/workspace.html`) a **szerver** gate-eli:
+session nélkül `302 /auth.html#/auth`. Az `auth.html` session + `lidar_auth` hint
+mellett `302 /`-re irányít. A statikus fájlok (`/src/*`, `/assets/*`, `/js/*`,
+`/mock/*`) nyilvánosak. Részletek: [`server/README.md`](../server/README.md).
+
 ---
 
 ## Dashboard guard (`index.html`, `workspace.html`)
@@ -140,9 +208,15 @@ Ugyanez a guard fut a főképernyőn (`index.html`) és a dashboardon
 | Email | nem üres, érvényes formátum | `Enter your email address.` / `Enter a valid email address.` |
 | Password | nem üres | `Enter your password.` |
 
-Backend nincs, ezért **nincs „hibás jelszó” állapot**: bármely érvényes
-formátumú email + bármilyen nem üres jelszó belép. A demo jelleget a footer
-`DEMO SESSION` sora és a panel alatti megjegyzés kommunikálja.
+Backend nélkül (statikus demó) **nincs „hibás jelszó” állapot**: bármely
+érvényes formátumú email + bármilyen nem üres jelszó belép. A demo jelleget a
+footer `DEMO SESSION` sora és a panel alatti megjegyzés kommunikálja.
+
+Server módban a `POST /api/auth/login` válasza dönt: `200` → belépés,
+`401 invalid_credentials` → „Invalid email or password.”, `429` → a `Retry-After`
+alapján „Too many attempts. Try again in N seconds.”, `400` → mezőhibák. Ha a
+`lidar_backend` marker megvan, de a health check nem válaszol, a UI
+`SERVICE_ERROR`-t mutat, és **nem** esik vissza demó loginra (biztonsági döntés).
 
 ### Register
 
@@ -183,9 +257,10 @@ szabály ellenőrzi.
 
 ### Kijelentkezés
 
-A dashboard headerében ghost `Sign out` gomb: `Session.clearSession()` →
-`auth.html#/auth`. Megerősítő dialógus nincs. A demo mód (`lidar.demoMode`)
-kijelentkezéskor **megmarad**.
+A dashboard headerében ghost `Sign out` gomb: `Session.clearSession()` +
+hint törlés, majd `Session.logout()` (server módban `POST /api/auth/logout`,
+401 esetén is sikeresnek tekintve), végül `auth.html#/auth`. Megerősítő
+dialógus nincs. A demo mód (`lidar.demoMode`) kijelentkezéskor **megmarad**.
 
 ---
 
@@ -228,9 +303,13 @@ elhagyásával), ezért nincs külön asset.
 
 ## Ismert korlátok / nyitott pontok
 
-- A demo session megkerülhető (lásd a biztonsági nyilatkozatot).
+- A statikus demó session megkerülhető; server módban a szerveroldali gate véd
+  (lásd a biztonsági nyilatkozatot).
 - A 9–11 px-es label-ek kicsik; a `--text-dim` a legkisebb kontraszt (AA-n átmegy).
-- A `Forgot password?` / Terms / Privacy stubok; valódi oldalak később.
+- A `Forgot password?` stub; a jelszó-reset jelenleg admin CLI
+  (`bin/users.js passwd`), e-mail alapú reset nincs.
+- Nincs profil / fióktörlés UI, nincs 2FA/OAuth/meghívás; a fiókokat a CLI kezeli.
+- A `rosbridge` (9090) és a Node-RED (1880) nincs a session mögé téve.
 - A consent pre-checked a demóban (élesben unchecked).
 - `axe-core` egyetlen `region` (moderate) jelzést ad: a `page-context` sor
   (breadcrumb + Documentation link) landmarkon kívül van, mert a terv

@@ -1,0 +1,9 @@
+# Local SQLite databases (auth + robot)
+server/data/*.db*
+robot/data/*.db*
+
+# Secrets / local environment
+.env
+
+# Dependencies
+node_modules/

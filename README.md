@@ -4,7 +4,7 @@
 
 This project aims to develop a self-contained (On-Board / Edge architecture), Raspberry Pi 5-controlled autonomous mobile robot. Utilizing a LiDAR sensor and encoder-equipped motors, the robot can autonomously map its environment and navigate to designated waypoints via a web interface. Each mapped environment features a saved "base point" to which the robot can automatically return.
 
-The entire software stack—including the ROS 2 backend, Node-RED automation engine, communication bridges, and the Nginx web server hosting the user interface—runs directly on the Raspberry Pi 5. Client devices (laptops, tablets, or smartphones) require no local software installation and can access the control interface via any modern web browser using the robot's IP address. The system architecture is designed to support parallel development, dividing the workload into two main streams: hardware/robotics and web interface development.
+The entire software stack—including the ROS 2 backend, Node-RED automation engine, communication bridges, and the on-board Node.js web/auth service hosting the user interface—runs directly on the Raspberry Pi 5. Client devices (laptops, tablets, or smartphones) require no local software installation and can access the control interface via any modern web browser using the robot's IP address. The system architecture is designed to support parallel development, dividing the workload into two main streams: hardware/robotics and web interface development.
 
 ---
 
@@ -13,7 +13,7 @@ The entire software stack—including the ROS 2 backend, Node-RED automation eng
 - Environment mapping using LiDAR (SLAM).
 - Autonomous navigation to arbitrary user-defined points on the mapped layout.
 - Saved base points for each map, enabling automated return-to-home functionality.
-- On-board web-based user interface (served via Nginx) for map editing and defining no-go zones (keepout masks).
+- On-board web-based user interface (served by the Node auth service; Nginx optional) for map editing and defining no-go zones (keepout masks).
 - Live LiDAR scan visualization on the web interface, alongside the generated map.
 - On-board Node-RED automation engine for telemetry routing, battery monitoring, and high-level system logic.
 
@@ -52,7 +52,8 @@ The entire software stack—including the ROS 2 backend, Node-RED automation eng
 - **Nav2** for navigation and path planning
 - **slam_toolbox** for SLAM and mapping
 - **Node-RED** for telemetry routing, automation workflows, and bridging ROS 2 data with high-level system logic
-- **Nginx** for serving the static web control interface (Web UI) directly from the Raspberry Pi
+- **Node.js auth service** (`server/`, zero npm dependencies): serves the Web UI, the `/api/auth/*` API and the server-side session on port `8080`
+- **Nginx** (optional): TLS termination or a reverse proxy in front of the Node service; it must not serve `web/public` directly
 
 ### Data Flow Diagram
 
@@ -111,7 +112,8 @@ While the physical robot is under development, the web team utilizes simulated/m
 
 | Service | Port / Endpoint | Description |
 | :--- | :--- | :--- |
-| **Web UI (Nginx)** | `http://<PI_IP>:80` | Main web-based robot control interface. |
+| **Web UI + Auth API (Node)** | `http://<PI_IP>:8080` | Main web-based robot control interface with a server-side session. |
+| **Nginx** (optional) | `http://<PI_IP>:80` | TLS / reverse proxy to the Node service; must not serve `web/public` directly. |
 | **Node-RED** | `http://<PI_IP>:1880` | Visual automation, telemetry routing, and logic editor. |
 | **rosbridge_suite** | `ws://<PI_IP>:9090` | WebSocket bridge for the `roslibjs` web app and Node-RED. |
 | **foxglove_bridge** | `ws://<PI_IP>:8765` | Developer WebSocket bridge for 3D diagnostics in Foxglove Studio.|
@@ -140,9 +142,21 @@ lidar-robot/
 │   │   ├── localization/
 │   │   └── nav2_config/
 │   └── README.md
-├── web/                          # Web interface application served by Nginx
+├── server/                       # Zero-dependency Node auth service + static host
+│   ├── server.js                 # Entry point
+│   ├── app.js                    # API router + static page gate
+│   ├── lib/                      # config, db, users, passwords, sessions, cookies,
+│   │                             # validate, ratelimit, security, static, http, log
+│   ├── bin/users.js              # Admin CLI (add, list, passwd, remove, backup)
+│   └── test/                     # node:test unit + API tests
+├── deploy/                       # systemd units, env example, Pi install docs
+│   ├── systemd/lidar-auth.service
+│   ├── systemd/webui.service
+│   ├── lidar-auth.env.example
+│   └── lidar-auth-users.sh
+├── web/                          # Web interface application served by the Node service
 │   ├── src/
-│   ├── public/                   # Static web root symlinked to /var/www/html
+│   ├── public/                   # Static web root (HTML/CSS/JS/assets)
 │   ├── mock/                     # Simulated ROS data for frontend testing
 │   └── README.md
 ├── PROJECT_BOARD.md
@@ -150,33 +164,59 @@ lidar-robot/
     └── ISSUE_TEMPLATE.md
 ```
 
-### 6.1. Web UI Auth Layer (Demo)
+### 6.1. Web UI Auth Layer (Server-Side Session)
 
-The web UI is gated by a demo authentication layer: three screens (`auth.html`)
-for start / log in / create account, hash routes (`#/auth`, `#/auth/login`,
-`#/auth/register`) and a client-side session.
+The web UI is gated by three screens (`auth.html`) for start / log in / create
+account, hash routes (`#/auth`, `#/auth/login`, `#/auth/register`) and a real
+server-side session when the Node service is running. Without the service
+(plain static hosting) the same UI falls back to the client-side demo session.
 
 | Piece | Where |
 | :--- | :--- |
 | Screens, hash router, validation | `web/public/auth.html`, `src/auth.js`, `src/auth.css` |
-| Session helpers (`window.Session`) | `web/public/src/session.js` |
+| Session helpers + backend detection (`window.Session`) | `web/public/src/session.js` |
 | Map selection main screen (after sign-in) | `web/public/index.html`, `src/maps.js`, `src/maps-data.js`, `src/maps.css` |
 | Sensor Workspace guard + `Sign out` | `web/public/workspace.html`, `src/app.js`, `src/style.css` |
+| Auth API + server-side gate | `server/app.js`, `server/lib/*` |
+| Admin CLI (accounts, passwords, backups) | `server/bin/users.js` |
 
-- **Session:** `lidar.session` in `localStorage` (remember me, 7 days) or
-  `sessionStorage` (tab lifetime, max 24 h). Only e-mail, display name and
-  timestamps are stored — never a password.
-- **Demo mode:** `lidar.demoMode` (`"1"` / `"0"`) is shared between the auth
-  screens, the map selection screen and the workspace.
-- **Password policy (register):** 12+ characters with at least one number and
-  one symbol; a 4-segment strength meter gives live feedback.
-- **No backend yet:** any valid e-mail plus any non-empty password signs in, and
-  registration logs in immediately.
+**Server mode (recommended).** `lidar_backend=1` marks the deployment; the
+frontend probes `/api/auth/health` and then uses the real API. The raw session
+token lives in the HttpOnly `lidar_session` cookie; the database stores only its
+SHA-256 hash. Passwords use scrypt (N=16384, r=8, p=1). Remember-me sessions
+last 7 days, other sessions 24 hours, with absolute expiry (no sliding) and at
+most 10 sessions per user. `lidar_auth=1` is the readable hint cookie used by
+the guards.
 
-> ⚠️ **Demo only — not a security control.** The guard is client-side, so anyone
-> can bypass it by disabling JavaScript or editing storage. Real protection needs
-> a server-side session (Nginx `auth_request` + a backend service, HttpOnly
-> cookies, password hashing, rate limiting, TLS).
+```bash
+# local development
+cd lidar-robot/server
+AUTH_PORT=8787 node server.js
+# http://127.0.0.1:8787/auth.html#/auth
+
+# first account
+read -rsp "Password: " PW; echo
+printf '%s' "$PW" | node bin/users.js add \
+  --email alex@example.com --name "Alex Morgan" --password-stdin
+unset PW
+```
+
+Configuration (`/etc/lidar-auth.env` on the Pi), the systemd unit, backups and
+the admin CLI are documented in [`lidar-robot/server/README.md`](lidar-robot/server/README.md)
+and [`lidar-robot/deploy/README.md`](lidar-robot/deploy/README.md). On the Pi the
+service listens on `:8080`; `ALLOW_REGISTRATION=0` is recommended.
+
+**Static demo.** Without the service, `lidar.session` in `localStorage`
+(remember me, 7 days) or `sessionStorage` (max 24 h) is the only session. Only
+e-mail, display name and timestamps are stored — never a password. `lidar.demoMode`
+(`"1"` / `"0"`) is shared between the auth screens, map selection and workspace.
+The register password policy is 12+ characters with at least one number and one
+symbol; a 4-segment strength meter gives live feedback.
+
+> ⚠️ **The static demo is not a security control.** The guard is client-side, so
+> anyone can bypass it by disabling JavaScript or editing storage. The server
+> mode replaces it with an HttpOnly session, scrypt hashes, rate limiting and a
+> real page gate. TLS is still not included (trusted LAN only).
 
 Details, routes, storage schema and asset regeneration:
 [`lidar-robot/docs/auth.md`](lidar-robot/docs/auth.md).
@@ -235,7 +275,7 @@ echo 'KERNEL=="ttyUSB*", MODE="0666"' | sudo tee /etc/udev/rules.d/99-lidar.rule
 sudo udevadm control --reload-rules && sudo udevadm trigger
 ```
 
-### 7.3. Installing ROS 2 Packages, Node-RED, and Nginx
+### 7.3. Installing ROS 2 Packages, Node-RED, and the Node Auth Service
 1. **Install ROS 2 bridges and LiDAR driver:**
    ```bash
    sudo apt update
@@ -246,13 +286,30 @@ sudo udevadm control --reload-rules && sudo udevadm trigger
    bash <(curl -sL [https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered](https://raw.githubusercontent.com/node-red/linux-installers/master/deb/update-nodejs-and-nodered)) --confirm-root --confirm-install --skip-pi
    sudo systemctl enable nodered.service && sudo systemctl start nodered.service
    ```
-3. **Install Nginx and link the `web/public` directory:**
+3. **Install Node.js >= 22.16 and the auth service:**
+   ```bash
+   curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+   sudo apt install nodejs -y
+   sudo install -m 640 -o root -g admin lidar-robot/deploy/lidar-auth.env.example /etc/lidar-auth.env
+   sudo cp lidar-robot/deploy/systemd/lidar-auth.service /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl disable --now webui.service 2>/dev/null || true
+   sudo systemctl enable --now lidar-auth.service
+   ```
+   Edit `/etc/lidar-auth.env` (`PUBLIC_ORIGIN`, `ALLOW_REGISTRATION=0`) and create
+   the first account with the CLI; full steps in
+   [`lidar-robot/deploy/README.md`](lidar-robot/deploy/README.md).
+
+4. **Nginx (optional, TLS/reverse proxy only):**
    ```bash
    sudo apt install nginx -y
-   sudo rm -rf /var/www/html
-   sudo ln -s /home/admin/lidar-robot/web/public /var/www/html
-   sudo chmod -R 755 /home/admin/lidar-robot/web
    ```
+   Point the site at the Node service (`proxy_pass http://127.0.0.1:8787;`) instead
+   of serving `web/public` directly. Serving the static directory from port 80
+   would bypass the server-side login gate.
+
+> The static demo fallback (`deploy/systemd/webui.service`, python on `:8080`)
+> remains available but must not run at the same time as `lidar-auth.service`.
 
 ### 7.4. Manual Bringup (Testing)
 To manually start the LiDAR driver and Foxglove WebSocket bridge on the Raspberry Pi:
@@ -271,13 +328,13 @@ ros2 launch rplidar_ros rplidar.launch.py
 
 | Area | Responsibilities |
 | :--- | :--- |
-| **Hardware / Robot Side** | Chassis assembly, motor controller node, encoder and IMU fusion, LiDAR driver, SLAM and Nav2 integration, configuring `rosbridge`, Nginx, and Node-RED on the Pi[cite: 5, 17]. |
+| **Hardware / Robot Side** | Chassis assembly, motor controller node, encoder and IMU fusion, LiDAR driver, SLAM and Nav2 integration, configuring `rosbridge`, the auth service, and Node-RED on the Pi[cite: 5, 17]. |
 | **Web Side** | UI framework, `roslibjs`/`ros2djs` integration, live LiDAR and map rendering, no-go zone drawing tool, map management interface[cite: 5, 17]. |
 
 **Workflow:**
 1. The initial phase requires establishing `docs/interface.md` and populating `PROJECT_BOARD.md`.
 2. Both sides develop on independent branches using simulated data in `web/mock/` where needed, with regular synchronization meetings.
-3. Once pushed to the repository and pulled onto the Raspberry Pi (`git pull`), Nginx immediately serves the updated frontend connected to live robot telemetry.
+3. Once pushed to the repository and pulled onto the Raspberry Pi (`git pull`), the auth service serves the updated frontend (and the real session) at `http://<PI_IP>:8080`; restart it with `sudo systemctl restart lidar-auth.service`. In static demo mode, Nginx serves the same frontend on port 80.
 
 ---
 
@@ -285,7 +342,7 @@ ros2 launch rplidar_ros rplidar.launch.py
 
 | Phase | Focus Area | Key Tasks | Milestone |
 | :--- | :--- | :--- | :--- |
-| **Phase 1** | **Infrastructure & Web Foundations** | - Finalize network and `udev` rules<br>- Install `rosbridge_suite`, `Node-RED`, and `Nginx`<br>- Create master `robot_bringup.launch.py` | Nginx (`:80`) and Node-RED (`:1880`) are accessible via browser; `rosbridge` (`:9090`) streams live `/scan` data. |
+| **Phase 1** | **Infrastructure & Web Foundations** | - Finalize network and `udev` rules<br>- Install `rosbridge_suite`, `Node-RED`, and Node.js 22 (auth service)<br>- Create master `robot_bringup.launch.py` | Auth service (`:8080`) and Node-RED (`:1880`) are accessible via browser; `rosbridge` (`:9090`) streams live `/scan` data. |
 | **Phase 2** | **Live LiDAR on Web UI & Node-RED Bridge** | - Deploy base HTML + `roslibjs` client in `web/`<br>- Connect Node-RED to `rosbridge`<br>- Finalize `docs/interface.md` | Live LiDAR `/scan` points render directly inside the custom web UI hosted on the Pi. |
 | **Phase 3** | **Drivetrain, IMU & Odometry** | - Wire DRV8833, encoders, and MPU6050<br>- Implement `motor_driver` node<br>- Configure `robot_localization` (EKF -> `/odom`) | Robot can be driven via web teleop controls and outputs fused `/odom` telemetry. |
 | **Phase 4** | **SLAM Mapping & Nav2** | - Configure `slam_toolbox` (`/map`)<br>- Set up `nav2_config` (`/goal_pose`, `/keepout_mask`) | Live occupancy grid map renders in the browser; clicking a point triggers autonomous navigation. |
