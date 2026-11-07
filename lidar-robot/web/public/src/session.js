@@ -1,10 +1,16 @@
 /* ------------------------------------------------------------------
-   LiDAR Autonomous Robot · demo session helpers
+   LiDAR Autonomous Robot · session helpers
 
-   ⚠️  DEMO ONLY. This is a client-side UX gate, NOT a security control.
-   Anyone can read/forge localStorage, skip the guard, or disable JS.
-   Real protection needs a server-side session (Nginx auth_request +
-   Node-RED or a dedicated auth service), HttpOnly cookies and TLS.
+   Two modes:
+
+   1. Server mode (`server/`, the Node auth service): the real gate is the
+      server-side session in the HttpOnly `lidar_session` cookie. This module
+      keeps only a UX hint in localStorage/sessionStorage and detects the
+      backend through the readable `lidar_backend` cookie.
+   2. Static demo (python http.server / plain static hosting): there is no
+      backend, so the client-side gate below is the only gate and is NOT a
+      security control. Anyone can read/forge localStorage, skip the guard or
+      disable JavaScript.
 
    Storage schema (kept in sync with the inline guard in index.html —
    if the key or the shape changes, update BOTH places):
@@ -288,7 +294,9 @@
 
         return api("/api/auth/logout", {}, { keepalive: true }).then(function (result) {
             clearServerHint();
-            return result.ok;
+            /* An already expired server session answers 401 in some proxy
+               setups; signing out must not get stuck because of that. */
+            return result.ok || result.status === 401;
         }, function () {
             clearServerHint();
             return false;
