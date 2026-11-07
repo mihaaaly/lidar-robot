@@ -13,6 +13,7 @@ const passwords = require("./lib/passwords");
 const rateLimit = require("./lib/ratelimit");
 const security = require("./lib/security");
 const sessions = require("./lib/sessions");
+const { createStaticHandler } = require("./lib/static");
 const users = require("./lib/users");
 const validate = require("./lib/validate");
 
@@ -59,6 +60,12 @@ function createApp(config, options) {
 
     rateLimitTimer.unref();
     timers.push(rateLimitTimer);
+
+    const staticHandler = createStaticHandler(config, {
+        findSession: function (token) {
+            return sessions.findSession(db, token);
+        }
+    });
 
     function fail(res, ctx, status, code, extra) {
         ctx.code = code;
@@ -436,7 +443,7 @@ function createApp(config, options) {
                 return;
             }
 
-            fail(res, ctx, 404, "not_found");
+            await staticHandler(req, res, ctx, pathname);
         } catch (error) {
             logger.error("unhandled_request_error", {
                 requestId: requestId,
