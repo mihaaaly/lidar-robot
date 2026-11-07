@@ -145,57 +145,40 @@ lidar-robot/
 │   ├── public/                   # Static web root symlinked to /var/www/html
 │   ├── mock/                     # Simulated ROS data for frontend testing
 │   └── README.md
-├── server/                       # Local-only auth backend (Node.js + SQLite)
-│   ├── server.js
-│   ├── lib/
-│   ├── test/
-│   └── README.md
 ├── PROJECT_BOARD.md
 └── .github/
     └── ISSUE_TEMPLATE.md
 ```
 
-### 6.1. Web UI Auth Layer
+### 6.1. Web UI Auth Layer (Demo)
 
-The web UI has an auth layer with three screens (`auth.html`) for start / log in /
-create account, hash routes (`#/auth`, `#/auth/login`, `#/auth/register`) and two
-runtime modes:
-
-| Mode | Where | Session |
-| :--- | :--- | :--- |
-| **Static demo** | `web/public` on the Raspberry Pi / any static server | `localStorage` or `sessionStorage` (client-side UX gate) |
-| **Local backend** | `server/` on this development machine only | HttpOnly `lidar_session` cookie + hashed password in SQLite |
+The web UI is gated by a demo authentication layer: three screens (`auth.html`)
+for start / log in / create account, hash routes (`#/auth`, `#/auth/login`,
+`#/auth/register`) and a client-side session.
 
 | Piece | Where |
 | :--- | :--- |
 | Screens, hash router, validation | `web/public/auth.html`, `src/auth.js`, `src/auth.css` |
 | Session helpers (`window.Session`) | `web/public/src/session.js` |
 | Dashboard guard + `Sign out` | `web/public/index.html`, `src/app.js`, `src/style.css` |
-| Real auth API, SQLite, scrypt, rate limit | `server/` (see [`server/README.md`](lidar-robot/server/README.md)) |
 
-- **Static demo session:** `lidar.session` in `localStorage` (remember me, 7 days)
-  or `sessionStorage` (tab lifetime, max 24 h). Only e-mail, display name and
+- **Session:** `lidar.session` in `localStorage` (remember me, 7 days) or
+  `sessionStorage` (tab lifetime, max 24 h). Only e-mail, display name and
   timestamps are stored — never a password.
-- **Backend session:** 32-byte random token, stored as SHA-256; the browser gets
-  an HttpOnly cookie. Remember me = 7 days, otherwise a session cookie with a
-  24 h server-side expiry. Passwords use scrypt + per-user salt.
-- **Mode detection:** the backend sets a non-sensitive `lidar_backend=1` cookie;
-  without it the frontend runs the old static demo and does not probe the API.
 - **Demo mode:** `lidar.demoMode` (`"1"` / `"0"`) is shared between the auth
   screens and the dashboard.
 - **Password policy (register):** 12+ characters with at least one number and
   one symbol; a 4-segment strength meter gives live feedback.
-- **Static demo login:** any valid e-mail plus any non-empty password signs in,
-  and registration logs in immediately.
+- **No backend yet:** any valid e-mail plus any non-empty password signs in, and
+  registration logs in immediately.
 
-> ⚠️ **The static Pi deployment is still demo-only.** Its guard is client-side,
-> so anyone can bypass it by disabling JavaScript or editing storage. The new
-> `server/` backend is the real protection, but it is **local-only in this
-> repository and was not deployed to the Pi**.
+> ⚠️ **Demo only — not a security control.** The guard is client-side, so anyone
+> can bypass it by disabling JavaScript or editing storage. Real protection needs
+> a server-side session (Nginx `auth_request` + a backend service, HttpOnly
+> cookies, password hashing, rate limiting, TLS).
 
 Details, routes, storage schema and asset regeneration:
-[`lidar-robot/docs/auth.md`](lidar-robot/docs/auth.md). Backend run/test
-instructions: [`lidar-robot/server/README.md`](lidar-robot/server/README.md).
+[`lidar-robot/docs/auth.md`](lidar-robot/docs/auth.md).
 
 ---
 

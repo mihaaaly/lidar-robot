@@ -17,13 +17,9 @@ A **statikus demo** (a Pi-n futó `web/public`) sessionje kliensoldali, ezért
 - a `localStorage` / `sessionStorage` kézzel szerkeszthető;
 - a session csak e-mailt, nevet és időbélyegeket tartalmaz (jelszót soha).
 
-Valódi védelemhez szerveroldali megoldás kell. Ez a repóban **már megvan** a
-[`server/`](../server/README.md) alatt (Node.js + SQLite + scrypt + HttpOnly
-cookie + rate limit), de az a szolgáltatás **csak a fejlesztői gépen fut**, a
-Raspberry Pi-re ebből a feladatból nem került ki semmi. A Pi-n továbbra is a
-statikus, kliensoldali demo működik.
-
-A részletes backend dokumentáció: [`server/README.md`](../server/README.md).
+Valódi védelemhez szerveroldali megoldás kell: szerveroldali session, HttpOnly
+cookie, jelszó-hash, rate limit, TLS. Ez még nem része a repónak — a UI design
+befejezése után kerül sorra.
 
 ---
 
@@ -37,19 +33,13 @@ web/public/
 └── src/
     ├── style.css                 # tokenek (--accent-ink), sign-out, noscript banner
     ├── auth.css                  # auth layout + form komponensek
-    ├── session.js                # window.Session storage helperek + API mód
-    ├── auth.js                   # router, validáció, session írás, server/demo mód
+    ├── session.js                # window.Session storage helperek
+    ├── auth.js                   # router, validáció, session írás
     └── app.js                    # demo mód visszaolvasás + sign out
-
-server/                           # ÚJ, local-only backend (nem a Pi-n fut)
-├── server.js                     # HTTP szerver + /api/auth/* + static gate
-├── lib/                          # db, scrypt, session, rate limit, validáció
-└── test/                         # node:test unit + integrációs tesztek
 ```
 
-Nincs build, nincs npm dependency a fronthoz: a fájlok statikusan tölthetők
-(`python3 -m http.server 8080` vagy Nginx). A backendhez Node.js >= 22.5 kell
-(a beépített `node:sqlite` miatt), de külső npm csomag ahhoz sem kell.
+Nincs build, nincs npm dependency: a fájlok statikusan tölthetők
+(`python3 -m http.server 8080` vagy Nginx).
 
 ---
 
@@ -74,8 +64,6 @@ Nincs build, nincs npm dependency a fronthoz: a fájlok statikusan tölthetők
 
 ## Session séma
 
-### Static demo mód (Pi)
-
 ```js
 // localStorage["lidar.session"] VAGY sessionStorage["lidar.session"]
 {
@@ -88,15 +76,7 @@ Nincs build, nincs npm dependency a fronthoz: a fájlok statikusan tölthetők
 }
 ```
 
-### Server mód (helyi backend)
-
-A valódi session egy **HttpOnly** `lidar_session` cookie, amelyet JS nem tud
-olvasni. A localStorage fenti objektuma ilyenkor csak UX-hintként íródik, hogy
-a dashboard inline guardja ne villantson auth oldalt. A `lidar_auth=1`
-olvasható hint cookie a redirect loop ellen véd; a `lidar_backend=1` marker
-jelzi, hogy valódi API van. A szerver a `GET /` és `GET /index.html` kéréseket
-session nélkül `302 → /auth.html#/auth`-ra irányítja, tehát a valódi kapu a
-szerveroldalon van.
+A storage kulcsai:
 
 | Kulcs | Tartalom |
 | :--- | :--- |
@@ -120,42 +100,9 @@ szerveroldalon van.
 | `getSession()` | érvényes lokális session vagy `null` |
 | `setSession(data, remember)` | írás; `false` storage hiba esetén |
 | `clearSession()` | mindkét storage törlése |
-| `isAuthenticated()` | `!!getSession()` (server módban ez csak hint) |
-| `requireAuth()` | nincs session/hint → `location.replace("auth.html#/auth")` |
+| `isAuthenticated()` | `!!getSession()` |
+| `requireAuth()` | nincs session → `location.replace("auth.html#/auth")` |
 | `getDemoMode()` / `setDemoMode(v)` | demo mód, default `true` |
-| `hasBackend()` | `lidar_backend=1` marker cookie olvasása |
-| `hasServerHint()` | `lidar_auth=1` hint cookie olvasása |
-| `detectBackend()` | `GET /api/auth/health` (csak marker cookie-val; cache-elt) |
-| `api(path, body, opts)` | JSON POST helper, `{ok, status, data, retryAfter}` |
-| `logout()` | `POST /api/auth/logout` + hint törlés |
-| `clearServerHint()` | a hint cookie kliensoldali törlése |
-
----
-
-## Helyi backend (local-only)
-
-A [`server/`](../server/README.md) egy külön, nullától írt Node.js szolgáltatás.
-Nem framework, nincs npm dependency; SQLite-ot a beépített `node:sqlite`-ból,
-jelszó-hasht a `node:crypto` scryptből használ.
-
-| Metódus | Útvonal | Leírás |
-| :--- | :--- | :--- |
-| `GET` | `/api/auth/health` | állapot + `lidar_backend=1` marker |
-| `GET` | `/api/auth/session` | `{authenticated, user, expiresAt}` |
-| `POST` | `/api/auth/register` | regisztráció + azonnali 7 napos session |
-| `POST` | `/api/auth/login` | jelszó ellenőrzés + remember szerinti session |
-| `POST` | `/api/auth/logout` | session visszavonás + cookie törlés |
-
-- A session token 32 random bájt; a DB-ben csak `SHA-256(token)` van.
-- A jelszó scrypt (16 bájt salt, N=16384, r=8, p=1), a válaszban soha nem jelenik meg.
-- HttpOnly `lidar_session` + olvasható `lidar_auth` hint + `lidar_backend` marker.
-- Login IP 20/15 perc, e-mail 10/15 perc; regisztráció IP 10/óra; `429` + `Retry-After`.
-- Origin ellenőrzés, `Sec-Fetch-Site` tiltás, JSON content-type, 16 KB body limit.
-- A `GET /` és `/index.html` szerveroldalon védett; a statikus Pi-demo továbbra is
-  a kliensoldali guardot használja.
-
-Indítás: `cd lidar-robot/server && npm start` → `http://127.0.0.1:8787`.
-Tesztek: `npm test` (16/16 zöld).
 
 ---
 
@@ -164,19 +111,15 @@ Tesztek: `npm test` (16/16 zöld).
 A `<head>`-ben futó, önálló inline script a body festése előtt ellenőrzi a
 sessiont, és érvénytelen/lejárt session esetén `auth.html#/auth`-ra irányít.
 
-- **Static demo módban** a `localStorage` / `sessionStorage` session a kapu.
-- **Server módban** a valódi kapu a szerver: a Node service session cookie
-  nélkül nem szolgálja ki az `index.html`-t. Az inline guard ilyenkor a
-  `lidar_auth=1` hint cookie-t is elfogadja, hogy a HttpOnly cookie miatt ne
-  legyen redirect loop. A guard tehát UX, nem biztonsági kontroll.
+- A kapu a `localStorage` / `sessionStorage` session; a guard UX, nem
+  biztonsági kontroll.
 - A guard **szándékosan nem függ** a `session.js`-től (ha az 404, akkor is működik),
   ezért a séma duplikált: a kulcs/séma változásakor **mindkét helyet** frissíteni kell.
 - A kritikus CSS inline: `html.auth-pending body { visibility: hidden; }`, hogy ne
   villanjon fel a dashboard. A `<noscript>` látható marad
   (`html.auth-pending noscript { visibility: visible; }`), és egy bannert mutat.
 - Érvényes session esetén az `auth.html` a `<head>`-ben azonnal `index.html`-re
-  irányít (nincs login-villanás); server módban ezt a szerver `302`-je is
-  megteszi, és a stale lokális session nem okoz loopot (a hint cookie dönt).
+  irányít (nincs login-villanás).
 
 ---
 
@@ -189,15 +132,9 @@ sessiont, és érvénytelen/lejárt session esetén `auth.html#/auth`-ra irány�
 | Email | nem üres, érvényes formátum | `Enter your email address.` / `Enter a valid email address.` |
 | Password | nem üres | `Enter your password.` |
 
-Backend nélküli statikus demo módban nincs „hibás jelszó” állapot: bármely
-érvényes formátumú email + bármilyen nem üres jelszó belép. A demo jelleget a
-footer `DEMO SESSION` sora és a panel alatti megjegyzés kommunikálja.
-
-A helyi backend mögött (lásd [`server/README.md`](../server/README.md)) a
-`POST /api/auth/login` valódi ellenőrzést végez: rossz jelszó →
-`401 invalid_credentials` („Invalid email or password.”), ismeretlen e-mail →
-ugyanaz a válasz, rate limit → `429` + `Retry-After`. Sikeres login után a
-footer `SECURE SESSION`-t mutat.
+Backend nincs, ezért **nincs „hibás jelszó” állapot**: bármely érvényes
+formátumú email + bármilyen nem üres jelszó belép. A demo jelleget a footer
+`DEMO SESSION` sora és a panel alatti megjegyzés kommunikálja.
 
 ### Register
 
@@ -209,13 +146,10 @@ footer `SECURE SESSION`-t mutat.
 | Confirm | egyezik | `Re-enter your password.` / `Passwords do not match.` |
 | Consent | kötelező | `Accept the Terms of Service and Privacy Policy to continue.` |
 
-Sikeres regisztráció után azonnali belépés: static demo módban `localStorage`,
-7 nap; a helyi backend mögött a szerver 7 napos HttpOnly sessiont állít be, és a
-`localStorage` csak hint marad.
+Sikeres regisztráció után azonnali belépés (`localStorage`, 7 nap).
 
 > A consent checkbox a **demóban alapból bejelölve** van, mert a Figma minta a
 > kitöltött állapotot mutatja. Éles bevezetésnél alapból **kikapcsolt** legyen.
-> A backend a `consent: true` mezőt szerveroldalon is megköveteli.
 
 ### Jelszó-erősség (4 szegmens)
 
@@ -241,12 +175,9 @@ szabály ellenőrzi.
 
 ### Kijelentkezés
 
-A dashboard headerében ghost `Sign out` gomb: static demo módban
-`Session.clearSession()` → `auth.html#/auth`; server módban
-`POST /api/auth/logout` (a HttpOnly cookie-t a szerver törli), majd lokális
-session + hint törlése és `auth.html#/auth`. 3 másodperces fallback timer
-biztosítja, hogy hálózati hiba esetén se ragadjon be a dashboard. Megerősítő
-dialógus nincs. A demo mód (`lidar.demoMode`) kijelentkezéskor **megmarad**.
+A dashboard headerében ghost `Sign out` gomb: `Session.clearSession()` →
+`auth.html#/auth`. Megerősítő dialógus nincs. A demo mód (`lidar.demoMode`)
+kijelentkezéskor **megmarad**.
 
 ---
 
