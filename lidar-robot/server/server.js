@@ -19,6 +19,19 @@ const HEADERS_TIMEOUT_MS = 10000;
 const KEEP_ALIVE_TIMEOUT_MS = 5000;
 const SHUTDOWN_TIMEOUT_MS = 5000;
 
+function createAppSafely(config, logger) {
+    try {
+        return createApp(config, { logger: logger });
+    } catch (error) {
+        logger.error("database_open_error", {
+            dbPath: config.dbPath,
+            message: error && error.message,
+            stack: error && error.stack
+        });
+        process.exit(1);
+    }
+}
+
 function main() {
     let loaded;
 
@@ -43,7 +56,7 @@ function main() {
         logger.warn("config_warning", { message: message });
     });
 
-    const app = createApp(config, { logger: logger });
+    const app = createAppSafely(config, logger);
     const server = http.createServer(app.handle);
 
     server.maxHeadersCount = 100;
@@ -71,6 +84,7 @@ function main() {
         server.close(function () {
             logger.info("shutdown_complete", {});
             clearTimeout(forced);
+            app.close();
             process.exit(0);
         });
     }
@@ -100,6 +114,7 @@ function main() {
             host: config.host,
             port: config.port
         });
+        app.close();
         process.exit(1);
     });
 
