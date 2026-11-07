@@ -12,9 +12,12 @@
    ------------------------------------------------------------------ */
 
 const fs = require("node:fs");
+const path = require("node:path");
+const { backup } = require("node:sqlite");
 const { ConfigError, loadConfig } = require("../lib/config");
 const { openDatabase } = require("../lib/db");
 const passwords = require("../lib/passwords");
+const sessions = require("../lib/sessions");
 const users = require("../lib/users");
 const validate = require("../lib/validate");
 
@@ -23,6 +26,9 @@ const USAGE = `Usage: node bin/users.js <command> [options]
 Commands:
   add      --email <email> --name <name> --password-stdin
   list
+  passwd   --email <email> --password-stdin
+  remove   --email <email> --yes
+  backup   --out <path>
   help
 
 Password input (never pass it on the command line):
@@ -31,6 +37,10 @@ Password input (never pass it on the command line):
   printf '%s' "$PW" | node bin/users.js add --email alex@example.com \\
     --name "Alex Morgan" --password-stdin
   unset PW
+
+passwd revokes every existing session of the user. remove needs --yes and
+cascades to the sessions. backup uses SQLite's online backup API and is
+safe while the service is running.
 `;
 
 function fail(message, code) {
@@ -164,6 +174,99 @@ function commandAdd(config, flags) {
     }
 }
 
+function commandPasswd(config, flags) {
+    if (flags["password-stdin"] !== true) {
+        fail(
+            "Password must come from stdin.\n\n" +
+            "  read -rsp \"New password: \" PW; echo\n" +
+            "  printf '%s' \"$PW\" | node bin/users.js passwd --email ... --password-stdin\n"
+        );
+    }
+
+    const password = readStdinPassword();
+    const passwordField = validate.passwordField(password);
+
+    if (passwordField.error) {
+        fail(passwordField.error);
+    }
+
+    const email = requireEmail(flags);
+    const db = openDatabase(config.dbPath);
+
+    try {
+        const user = users.findByEmail(db, email);
+
+        if (!user) {
+            fail(`No user with ${email}.`, 2);
+        }
+
+        return passwords
+            .hashPassword(password, { N: config.scryptN })
+            .then(function (passwordHash) {
+                users.updatePassword(db, user.id, passwordHash);
+                const revoked = sessions.deleteSessionsForUser(db, user.id);
+
+                process.stdout.write(
+                    `password updated for #${user.id}  ${user.email}` +
+                    (revoked ? "  (sessions revoked)" : "") + "\n"
+                );
+            })
+            .finally(function () {
+                db.close();
+            });
+    } catch (error) {
+        db.close();
+        throw error;
+    }
+}
+
+function commandRemove(config, flags) {
+    const email = requireEmail(flags);
+
+    if (flags.yes !== true) {
+        fail("Refusing to delete without --yes.");
+    }
+
+    const db = openDatabase(config.dbPath);
+
+    try {
+        const user = users.findByEmail(db, email);
+
+        if (!user) {
+            fail(`No user with ${email}.`, 2);
+        }
+
+        users.deleteUserById(db, user.id);
+        process.stdout.write(`removed user #${user.id}  ${user.email}\n`);
+    } finally {
+        db.close();
+    }
+}
+
+async function commandBackup(config, flags) {
+    if (typeof flags.out !== "string" || !flags.out) {
+        fail("Missing --out <path>.");
+    }
+
+    const outPath = path.resolve(process.cwd(), flags.out);
+    const db = openDatabase(config.dbPath);
+
+    try {
+        fs.mkdirSync(path.dirname(outPath), { recursive: true, mode: 0o700 });
+        await backup(db, outPath);
+
+        try {
+            fs.chmodSync(outPath, 0o600);
+        } catch (error) {
+            /* the parent directory mode still protects the file */
+        }
+
+        process.stdout.write(`backup written: ${outPath}\n`);
+    } finally {
+        db.close();
+    }
+}
+
 function commandList(config) {
     const db = openDatabase(config.dbPath);
 
@@ -224,6 +327,21 @@ function main() {
     if (parsed.command === "list") {
         const config = loadContext();
         return commandList(config);
+    }
+
+    if (parsed.command === "passwd") {
+        const config = loadContext();
+        return commandPasswd(config, parsed.flags);
+    }
+
+    if (parsed.command === "remove") {
+        const config = loadContext();
+        return commandRemove(config, parsed.flags);
+    }
+
+    if (parsed.command === "backup") {
+        const config = loadContext();
+        return commandBackup(config, parsed.flags);
     }
 
     fail(`Unknown command: ${parsed.command}\n\n${USAGE}`);
