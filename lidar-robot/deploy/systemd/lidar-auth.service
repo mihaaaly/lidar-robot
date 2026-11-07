@@ -1,0 +1,28 @@
+[Unit]
+Description=LiDAR Robot - auth backend and web UI
+Documentation=file:///home/admin/lidar-robot/lidar-robot/server/README.md
+After=network-online.target
+Wants=network-online.target
+Conflicts=webui.service
+
+[Service]
+Type=simple
+User=admin
+Group=admin
+WorkingDirectory=/home/admin/lidar-robot/lidar-robot/server
+EnvironmentFile=/etc/lidar-auth.env
+ExecStart=/usr/bin/node --disable-warning=ExperimentalWarning server.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=10
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/admin/lidar-robot/lidar-robot/robot/data
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
