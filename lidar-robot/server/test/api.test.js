@@ -508,3 +508,26 @@ test("public assets are served and server-side files stay hidden", async functio
     assert.equal(serverFile.status, 404);
     assert.equal(traversal.status, 404);
 });
+
+test("the session cap keeps at most ten sessions per user", async function (t) {
+    const ctx = await start(t);
+    const body = registerBody();
+
+    await request(ctx.base, "/api/auth/register", { body: body });
+
+    for (let i = 0; i < 12; i += 1) {
+        const login = await request(ctx.base, "/api/auth/login", {
+            body: { email: body.email, password: body.password, remember: true }
+        });
+
+        assert.equal(login.status, 200);
+    }
+
+    const row = ctx.app.db.prepare("SELECT COUNT(*) AS n FROM sessions").get();
+
+    assert.equal(row.n, 10);
+    assert.equal(
+        ctx.app.db.prepare("SELECT COUNT(*) AS n FROM sessions WHERE remember = 1").get().n,
+        10
+    );
+});
