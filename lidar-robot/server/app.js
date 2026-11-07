@@ -5,15 +5,9 @@
    tests can start an app on an ephemeral port with a temp database.
    ------------------------------------------------------------------ */
 
+const cookies = require("./lib/cookies");
 const http = require("./lib/http");
 const { createLogger, newRequestId } = require("./lib/log");
-
-const BACKEND_COOKIE_MAX_AGE = 24 * 60 * 60;
-
-function backendCookie(config) {
-    return "lidar_backend=1; Path=/; SameSite=Lax; Max-Age=" + BACKEND_COOKIE_MAX_AGE +
-        (config.cookieSecure ? "; Secure" : "");
-}
 
 function createApp(config, options) {
     const opts = options || {};
@@ -58,7 +52,7 @@ function createApp(config, options) {
 
         http.setSecurityHeaders(res);
         res.setHeader("X-Request-Id", requestId);
-        res.setHeader("Set-Cookie", backendCookie(config));
+        cookies.appendSetCookie(res, cookies.backendCookie(config));
 
         res.on("finish", function () {
             const pathname = String(req.url || "").split("?")[0];
