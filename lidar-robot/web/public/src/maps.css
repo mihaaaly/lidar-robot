@@ -1,0 +1,1059 @@
+/* ------------------------------------------------------------------
+   LiDAR Autonomous Robot · Map selection (main screen)
+
+   Figma: `LiDAR · Map selection` (43:4131), 1440 × 1000.
+   Tokens come from style.css; only the map-preview specific colours are
+   added here.
+   ------------------------------------------------------------------ */
+
+:root {
+    --map-grid: #1c282f;   /* preview grid lines */
+    --map-wall: #587681;   /* walls, outline of an unselected map, separators */
+    --map-empty: #20262b;  /* filled room interior */
+}
+
+.icon {
+    display: block;
+    flex: 0 0 auto;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ------------------------------------------------------------- Workspace */
+
+/* The design tracks the footer label at 0.7px (style.css uses 0.02em). */
+#status-label {
+    letter-spacing: 0.7px;
+}
+
+.map-workspace {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: stretch;
+    gap: 24px;
+    padding: 0 28px 24px;
+    min-height: 0;
+}
+
+.map-library {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ------------------------------------------------------- Library header */
+
+.library-intro {
+    flex: 0 0 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.library-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.library-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.library-title-row h2 {
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.library-count {
+    color: var(--text-dim);
+    font-size: 11px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.library-description {
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.25;
+}
+
+.import-button {
+    flex: 0 0 auto;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 13px;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: background 0.16s ease, border-color 0.16s ease;
+}
+
+.import-button:hover {
+    background: #242c31;
+    border-color: #3a454d;
+}
+
+/* ------------------------------------------------------ Search and sort */
+
+.library-toolbar {
+    flex: 0 0 40px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.search-field {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 13px;
+    background: var(--chart);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    transition: border-color 0.16s ease;
+}
+
+.search-field:focus-within {
+    border-color: #3f4d57;
+}
+
+.search-field input {
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    background: none;
+    border: 0;
+    outline: none;
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 12px;
+    line-height: 1;
+}
+
+.search-field input::placeholder {
+    color: var(--text-dim);
+}
+
+.search-field input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+}
+
+.sort-field {
+    position: relative;
+    flex: 0 0 131px;
+    width: 131px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 13px;
+    background: var(--panel-raised);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    transition: border-color 0.16s ease;
+}
+
+.sort-field:focus-within {
+    border-color: #3f4d57;
+}
+
+.sort-field select {
+    -webkit-appearance: none;
+    appearance: none;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: 100%;
+    padding: 0;
+    background: none;
+    border: 0;
+    outline: none;
+    color: var(--text-muted);
+    font-family: var(--font-ui);
+    font-size: 12px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.sort-field select option {
+    background: var(--panel-raised);
+    color: var(--text);
+}
+
+/* ------------------------------------------------------------- Filters */
+
+.library-filters {
+    flex: 0 0 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.filter-chip {
+    height: 28px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0 12px;
+    background: none;
+    border: 0;
+    border-radius: 6px;
+    color: var(--text-dim);
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+    transition: background 0.16s ease, color 0.16s ease;
+}
+
+.filter-chip:hover {
+    color: var(--text-muted);
+}
+
+.filter-chip.is-active {
+    background: var(--accent-deep);
+    color: var(--accent);
+}
+
+.filter-count {
+    font-size: 11px;
+    opacity: 0.83;
+}
+
+.view-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.view-button {
+    width: 16px;
+    height: 16px;
+    display: grid;
+    place-items: center;
+    padding: 0;
+    background: none;
+    border: 0;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: color 0.16s ease;
+}
+
+.view-button:hover {
+    color: var(--text-muted);
+}
+
+.view-button.is-active {
+    color: var(--accent);
+}
+
+/* ------------------------------------------------------------- Map grid */
+
+.map-grid {
+    flex: 0 1 auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-content: start;
+    gap: 16px;
+}
+
+.map-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 260px;
+    background: var(--panel);
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px var(--border);
+    cursor: pointer;
+    transition: box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.map-card:hover {
+    background: #1b2025;
+}
+
+.map-card.is-selected {
+    box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.map-preview {
+    position: relative;
+    flex: 0 0 148px;
+    height: 148px;
+    overflow: hidden;
+    border-radius: 11px 11px 0 0;
+    background-color: var(--chart);
+    background-image:
+        linear-gradient(to right, var(--map-grid) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--map-grid) 1px, transparent 1px);
+    background-size: 24px 24px;
+    background-position: 0 0;
+}
+
+.map-preview svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.map-id {
+    position: absolute;
+    top: 12px;
+    left: 11px;
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 7px;
+    background: var(--chart);
+    border-radius: 4px;
+    color: var(--text-dim);
+    font-size: 9px;
+    line-height: 1;
+}
+
+.map-select-mark {
+    position: absolute;
+    top: 12px;
+    right: 13px;
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    background: var(--chart);
+    border: 1px solid var(--map-wall);
+    border-radius: 50%;
+    color: var(--accent-ink);
+}
+
+.map-select-mark img {
+    display: none;
+}
+
+.map-card.is-selected .map-select-mark {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.map-card.is-selected .map-select-mark img {
+    display: block;
+}
+
+.map-info {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
+    padding: 16px;
+    border-top: 1px solid var(--border);
+}
+
+.map-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.map-name-row h3 {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.map-state {
+    flex: 0 0 auto;
+    color: var(--text-dim);
+    font-size: 9px;
+    line-height: 1;
+}
+
+.map-card.is-selected .map-state {
+    color: var(--accent);
+}
+
+.map-props {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--text-dim);
+    font-size: 11px;
+    line-height: 1.25;
+    white-space: nowrap;
+}
+
+.map-props > .map-area {
+    color: var(--text-muted);
+}
+
+.map-sep {
+    width: 3px;
+    height: 3px;
+    flex: 0 0 3px;
+    border-radius: 50%;
+    background: var(--map-wall);
+}
+
+.map-updated {
+    color: var(--text-dim);
+    font-size: 10px;
+    line-height: 1.2;
+}
+
+/* List view (not in the Figma frame — a compact alternative) */
+.map-grid.is-list {
+    grid-template-columns: minmax(0, 1fr);
+}
+
+.map-grid.is-list .map-card {
+    height: 140px;
+    flex-direction: row;
+    align-items: stretch;
+}
+
+.map-grid.is-list .map-preview {
+    flex: 0 0 200px;
+    height: auto;
+    aspect-ratio: auto;
+    border-radius: 11px 0 0 11px;
+    border-right: 1px solid var(--border);
+}
+
+.map-grid.is-list .map-info {
+    border-top: 0;
+    justify-content: center;
+    padding: 16px 20px;
+}
+
+/* -------------------------------------------------------- Empty / notice */
+
+.map-empty {
+    padding: 18px 20px;
+    background: var(--panel);
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px var(--border);
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.link-button {
+    padding: 0;
+    background: none;
+    border: 0;
+    color: var(--accent);
+    font: inherit;
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.library-note {
+    width: 100%;
+    flex: 0 0 48px;
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0 16px;
+    background: var(--panel);
+    border-radius: 8px;
+    box-shadow: inset 0 0 0 1px var(--border);
+    color: var(--text-dim);
+    font-size: 11px;
+    line-height: 1.3;
+}
+
+/* ---------------------------------------------------- Selected map panel */
+
+.map-context {
+    flex: 0 0 520px;
+    width: 520px;
+    display: flex;
+    flex-direction: column;
+    min-height: 760px;
+    overflow: hidden;
+    background: var(--panel);
+    border-radius: 12px;
+    box-shadow: inset 0 0 0 1px var(--border);
+}
+
+.context-header {
+    flex: 0 0 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 0 22px;
+}
+
+.context-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.context-title h2 {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.demo-badge {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    height: 20px;
+    padding: 0 8px;
+    background: var(--amber-deep);
+    border-radius: 4px;
+    color: var(--amber);
+    font-size: 9px;
+    line-height: 1;
+}
+
+.context-map {
+    position: relative;
+    flex: 0 0 260px;
+    height: 260px;
+    background: var(--chart);
+}
+
+.context-map svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.context-scale {
+    position: absolute;
+    left: 20px;
+    bottom: 24px;
+    width: 64px;
+    height: 1px;
+    background: var(--text-muted);
+}
+
+.context-scale-label {
+    position: absolute;
+    left: 20px;
+    bottom: 8px;
+    color: var(--text-dim);
+    font-size: 9px;
+    line-height: 1;
+}
+
+.context-frame {
+    position: absolute;
+    right: 22px;
+    bottom: 9px;
+    color: var(--text-dim);
+    font-size: 9px;
+    line-height: 1;
+}
+
+.context-orientation {
+    position: absolute;
+    top: 17px;
+    right: 15px;
+    color: var(--text-muted);
+    font-size: 10px;
+    line-height: 1;
+}
+
+.context-legend {
+    flex: 0 0 40px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 0 22px;
+    border-bottom: 1px solid var(--border);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--text-muted);
+    font-size: 10px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.legend-dot {
+    width: 4px;
+    height: 4px;
+    flex: 0 0 4px;
+    border-radius: 50%;
+    background: var(--accent);
+}
+
+.legend-type {
+    color: var(--text-dim);
+    font-size: 9px;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.context-details {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 22px;
+    min-height: 0;
+}
+
+.context-identity {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.context-name-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.context-name-row h3 {
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.22;
+    letter-spacing: -0.02em;
+}
+
+.context-id {
+    flex: 0 0 auto;
+    color: var(--text-dim);
+    font-size: 10px;
+    line-height: 1;
+}
+
+.context-description {
+    color: var(--text-muted);
+    font-size: 12px;
+    line-height: 1.25;
+}
+
+.context-metadata {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px 20px;
+    margin: 0;
+}
+
+.context-property {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+}
+
+.context-property dt {
+    color: var(--text-dim);
+    font-size: 10px;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.context-property dd {
+    margin: 0;
+    color: var(--text);
+    font-size: 13px;
+    line-height: 1.3;
+    white-space: nowrap;
+}
+
+.context-file {
+    height: 34px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    min-width: 0;
+}
+
+.file-name {
+    color: var(--text-muted);
+    font-size: 10px;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-format {
+    flex: 0 0 auto;
+    color: var(--text-dim);
+    font-size: 10px;
+    line-height: 1.3;
+}
+
+.context-notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    background: var(--amber-deep);
+    border-radius: 6px;
+    color: var(--amber);
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.context-notice .icon {
+    position: relative;
+    top: 2px;
+}
+
+.open-workspace {
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: var(--accent);
+    border-radius: 8px;
+    color: var(--accent-ink);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.16s ease;
+}
+
+.open-workspace:hover {
+    background: #74e2f2;
+}
+
+.open-workspace:active {
+    background: #4cc9dd;
+}
+
+.context-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: var(--text-dim);
+    font-size: 10px;
+    line-height: 1.3;
+    text-align: center;
+}
+
+.context-note span {
+    min-width: 0;
+}
+
+/* --------------------------------------------------------- Map artwork */
+
+.map-outline {
+    fill: none;
+    stroke: var(--map-wall);
+    stroke-width: 1.5;
+    stroke-linejoin: round;
+}
+
+.map-wall {
+    fill: var(--map-wall);
+}
+
+.map-area {
+    fill: var(--map-empty);
+    stroke: var(--map-wall);
+    stroke-width: 1;
+}
+
+.map-dot {
+    fill: var(--map-wall);
+}
+
+.map-base-range {
+    fill: var(--accent-deep);
+    stroke: var(--map-wall);
+    stroke-width: 1;
+}
+
+.map-base-dot {
+    fill: var(--text-muted);
+}
+
+.map-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0;
+    fill: var(--text-dim);
+}
+
+.map-label--accent {
+    fill: var(--accent);
+}
+
+.map-card.is-selected .map-outline {
+    stroke: var(--accent);
+}
+
+.map-card.is-selected .map-dot {
+    fill: var(--accent);
+}
+
+.map-card.is-selected .map-base-range {
+    stroke: var(--accent);
+}
+
+.map-card.is-selected .map-base-dot {
+    fill: var(--accent);
+}
+
+#context-map-svg .map-outline {
+    stroke: var(--accent);
+}
+
+#context-map-svg .map-dot {
+    fill: var(--accent);
+}
+
+#context-map-svg .map-base-range {
+    stroke: var(--accent);
+}
+
+#context-map-svg .map-base-dot {
+    fill: var(--accent);
+}
+
+/* ---------------------------------------------------------------- Toast */
+
+.toast {
+    position: fixed;
+    left: 50%;
+    bottom: 76px;
+    transform: translateX(-50%);
+    max-width: min(480px, calc(100vw - 40px));
+    padding: 10px 16px;
+    background: var(--panel-raised);
+    border-radius: 8px;
+    box-shadow: inset 0 0 0 1px var(--border), 0 12px 32px rgba(0, 0, 0, 0.45);
+    color: var(--text);
+    font-size: 12px;
+    line-height: 1.4;
+    z-index: 20;
+}
+
+/* ----------------------------------------------------------- Responsive */
+
+@media (max-width: 1439px) {
+    .map-card {
+        height: auto;
+    }
+
+    .map-preview {
+        flex: 0 0 auto;
+        height: auto;
+        aspect-ratio: 412 / 148;
+    }
+
+    .map-info {
+        flex: 0 0 auto;
+        min-height: 112px;
+    }
+}
+
+@media (max-width: 1199px) {
+    .map-workspace {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .map-context {
+        flex: 0 0 auto;
+        width: 100%;
+        max-width: 760px;
+        min-height: 0;
+        margin: 0 auto;
+    }
+
+    .context-map {
+        flex: 0 0 auto;
+        height: auto;
+        aspect-ratio: 520 / 260;
+    }
+
+    .map-grid {
+        flex: 0 0 auto;
+    }
+
+    .library-note {
+        margin-top: 0;
+    }
+}
+
+@media (max-width: 960px) {
+    .map-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 860px) {
+    .map-workspace {
+        padding: 0 20px 20px;
+    }
+
+    .library-toolbar {
+        flex: 0 0 auto;
+        flex-wrap: wrap;
+    }
+
+    .search-field {
+        flex: 1 1 100%;
+    }
+
+    .sort-field {
+        flex: 1 1 auto;
+        justify-content: space-between;
+    }
+
+    .library-intro {
+        flex: 0 0 auto;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+}
+
+@media (max-width: 700px) {
+    .map-grid,
+    .map-grid.is-list {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .map-grid.is-list .map-card {
+        height: 140px;
+    }
+
+    .map-grid.is-list .map-preview {
+        flex-basis: 140px;
+    }
+
+    .context-metadata {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 620px) {
+    .map-workspace {
+        gap: 18px;
+    }
+
+    .library-title-row {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    .library-title-row h2 {
+        font-size: 17px;
+        white-space: normal;
+    }
+
+    .import-button {
+        width: 100%;
+        justify-content: center;
+    }
+
+    .context-header {
+        padding: 0 18px;
+    }
+
+    .context-legend {
+        flex-wrap: wrap;
+        height: auto;
+        min-height: 40px;
+        gap: 8px 16px;
+        padding: 10px 18px;
+    }
+
+    .context-details {
+        padding: 18px;
+    }
+
+    .context-name-row {
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .context-name-row h3 {
+        font-size: 20px;
+    }
+
+    .context-metadata {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px 16px;
+    }
+
+    .context-property dd {
+        font-size: 12px;
+    }
+
+    .context-note {
+        justify-content: flex-start;
+        text-align: left;
+    }
+
+    .map-grid.is-list .map-card {
+        flex-direction: column;
+        height: auto;
+    }
+
+    .map-grid.is-list .map-preview {
+        flex: 0 0 auto;
+        width: 100%;
+        aspect-ratio: 412 / 148;
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+        border-radius: 11px 11px 0 0;
+    }
+}

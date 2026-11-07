@@ -28,11 +28,16 @@ befejezése után kerül sorra.
 ```text
 web/public/
 ├── auth.html                     # a három nézet egy fájlban (hash routing)
-├── index.html                    # dashboard + inline demo guard + Sign out
+├── index.html                    # Map Selection főképernyő + inline demo guard
+├── workspace.html                # Sensor Workspace dashboard + guard + Sign out
 ├── assets/auth-sensor-preview.svg  # statikus LiDAR preview (Figma export)
+├── assets/icons/*.svg            # a főképernyő Figma ikonjai
 └── src/
     ├── style.css                 # tokenek (--accent-ink), sign-out, noscript banner
     ├── auth.css                  # auth layout + form komponensek
+    ├── maps.css                  # Map Selection layout
+    ├── maps-data.js              # demo térképkönyvtár (geometria + metaadat)
+    ├── maps.js                   # kiválasztás, keresés, szűrés, renderelés
     ├── session.js                # window.Session storage helperek
     ├── auth.js                   # router, validáció, session írás
     └── app.js                    # demo mód visszaolvasás + sign out
@@ -58,7 +63,8 @@ Nincs build, nincs npm dependency: a fájlok statikusan tölthetők
   a `document.title` és a header/page-context/footer szövegek a view configból
   frissülnek.
 - Belépés/regisztráció után `location.replace("index.html")`, hogy a Back ne
-  vigyen vissza az űrlapra.
+  vigyen vissza az űrlapra. Az `index.html` a **Map Selection** főképernyő; a
+  dashboard onnan nyílik (`workspace.html`).
 
 ---
 
@@ -106,10 +112,12 @@ A storage kulcsai:
 
 ---
 
-## Dashboard guard (`index.html`)
+## Dashboard guard (`index.html`, `workspace.html`)
 
 A `<head>`-ben futó, önálló inline script a body festése előtt ellenőrzi a
 sessiont, és érvénytelen/lejárt session esetén `auth.html#/auth`-ra irányít.
+Ugyanez a guard fut a főképernyőn (`index.html`) és a dashboardon
+(`workspace.html`) is.
 
 - A kapu a `localStorage` / `sessionStorage` session; a guard UX, nem
   biztonsági kontroll.

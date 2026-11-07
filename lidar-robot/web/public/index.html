@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="dark">
-    <title>LiDAR Autonomous Robot · Sensor Workspace</title>
+    <title>Map Selection · LiDAR Autonomous Robot</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="src/style.css">
+    <link rel="stylesheet" href="src/maps.css">
     <style>
-        /* Critical: hide the dashboard until the demo guard has run. */
+        /* Critical: hide the screen until the demo guard has run. */
         html.auth-pending body { visibility: hidden; }
         html.auth-pending noscript { visibility: visible; }
     </style>
@@ -28,7 +29,7 @@
           server-side session (HttpOnly cookie, hashed passwords, rate limit).
 
           Deliberately standalone (does not load session.js) so a missing
-          script cannot lock the dashboard out. The schema is duplicated in
+          script cannot lock the screen out. The schema is duplicated in
           src/session.js — if the key or shape changes, update BOTH places.
         */
         (function () {
@@ -122,138 +123,171 @@
 
         <div class="workspace-heading">
             <div class="workspace-title">
-                <h1>Sensor Workspace</h1>
-                <span class="topic mono">/scan</span>
+                <h1>Map Selection</h1>
+                <span class="topic mono">/maps</span>
             </div>
             <div class="data-source">
-                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-                    <path d="M8.75073 1.24951V4.99981C8.75064 5.20951 8.8033 5.41585 8.90385 5.59986L10.9674 9.37516M8.75073 1.24951H6.25075M8.75073 1.24951H9.68793M10.9674 9.37516L12.3476 11.9004C12.4517 12.0908 12.5045 12.305 12.5008 12.522C12.4971 12.739 12.4369 12.9513 12.3262 13.138C12.2155 13.3246 12.0582 13.4793 11.8696 13.5867C11.681 13.6941 11.4677 13.7506 11.2507 13.7505H3.75077C3.53376 13.7506 3.32047 13.6941 3.13189 13.5867C2.94332 13.4793 2.78595 13.3246 2.67527 13.138C2.56459 12.9513 2.50442 12.739 2.50067 12.522C2.49693 12.305 2.54974 12.0908 2.6539 11.9004L4.03412 9.37516M10.9674 9.37516H4.03412M10.9674 9.37516H10.9674M4.03412 9.37516L6.09762 5.59986C6.19818 5.41585 6.25084 5.20951 6.25075 4.99981V1.24951M4.03412 9.37516H4.03368M6.25075 1.24951H5.31297" stroke-width="1.6" stroke-linecap="round" stroke="#E4B96D"/>
-                </svg>
-                <span id="data-source-text">Illustrative sample data — not live measurement</span>
+                <img class="icon" src="assets/icons/flask-conical.svg" alt="" width="15" height="15">
+                <span>Illustrative sample maps — not a live environment</span>
             </div>
         </div>
 
-        <main class="workspace">
-            <section class="card radar-card" aria-labelledby="radar-title">
-                <div class="radar-header">
-                    <div class="panel-heading">
-                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-                            <path d="M5.24243 2.50464C6.67301 1.67756 8.33669 1.34609 9.97502 1.56173C11.6133 1.77738 13.1346 2.52805 14.3024 3.69714L12.1799 5.81963M12.1799 5.81963L10.0604 7.93907M12.1799 5.81963C12.1799 5.81966 12.1799 5.81969 12.18 5.81973M12.1799 5.81963C11.7483 5.38555 11.2327 5.04408 10.6646 4.81613C10.0964 4.58816 9.48772 4.47851 8.87574 4.49388C8.26376 4.50926 7.66135 4.64934 7.10537 4.90556C6.54939 5.16177 6.05154 5.52873 5.64227 5.98399C5.233 6.43924 4.92092 6.97322 4.72513 7.55324C4.52934 8.13326 4.45395 8.74713 4.50358 9.35729C4.55321 9.96745 4.72682 10.5611 5.01378 11.1018C5.30073 11.6426 5.695 12.1191 6.17247 12.5022M10.0604 7.93907L10.0574 7.94205M10.0604 7.93907C9.78891 7.66765 9.41394 7.49979 8.99976 7.49979C8.17133 7.49979 7.49976 8.17136 7.49976 8.99979C7.49976 9.82821 8.17133 10.4998 8.99976 10.4998C9.82818 10.4998 10.4998 9.82821 10.4998 8.99979C10.4998 8.58554 10.3318 8.21052 10.0604 7.93907ZM2.99976 4.49979H3.00726M1.71752 7.21449C1.43634 8.35979 1.4292 9.55525 1.69669 10.7038C1.96417 11.8524 2.49874 12.9217 3.25699 13.8249C4.01525 14.7282 4.97581 15.4398 6.06069 15.9022C7.14558 16.3646 8.32421 16.5646 9.5009 16.486C10.6776 16.4075 11.8192 16.0525 12.8329 15.45C13.8467 14.8475 14.7041 14.0144 15.3356 13.0184C15.967 12.0224 16.3547 10.8915 16.4671 9.71758C16.5795 8.54364 16.4135 7.35974 15.9825 6.26199M8.99976 13.4998H9.00726M13.4919 8.7449C13.5327 9.45843 13.403 10.1714 13.1134 10.8248C12.8239 11.4783 12.3829 12.0533 11.8269 12.5024" stroke-width="1.6" stroke-linecap="round" stroke="#5BD9ED"/>
-                        </svg>
-                        <h2 id="radar-title">LiDAR Scanning</h2>
+        <main class="map-workspace">
+            <section class="map-library" aria-labelledby="library-title">
+                <div class="library-intro">
+                    <div class="library-heading">
+                        <div class="library-title-row">
+                            <h2 id="library-title">Choose your environment</h2>
+                            <span class="library-count mono" id="library-count">04 MAPS</span>
+                        </div>
+                        <p class="library-description">Select a saved map to explore it in the Sensor Workspace.</p>
                     </div>
-                    <div class="radar-meta">
-                        <span class="mono">360°</span>
-                        <span class="badge badge--demo" id="radar-badge">DEMO</span>
+                    <button class="import-button" id="import-map" type="button">
+                        <img class="icon" src="assets/icons/upload.svg" alt="" width="14" height="14">
+                        <span>Import map</span>
+                    </button>
+                </div>
+
+                <div class="library-toolbar">
+                    <div class="search-field">
+                        <img class="icon" src="assets/icons/search.svg" alt="" width="16" height="16">
+                        <label class="sr-only" for="map-search">Search maps by name or ID</label>
+                        <input id="map-search" type="search" placeholder="Search maps by name or ID..." autocomplete="off">
+                    </div>
+                    <div class="sort-field">
+                        <label class="sr-only" for="map-sort">Sort maps</label>
+                        <select id="map-sort">
+                            <option value="updated">Last updated</option>
+                            <option value="name">Name (A–Z)</option>
+                            <option value="area">Area (largest first)</option>
+                        </select>
+                        <img class="icon" src="assets/icons/chevron-down.svg" alt="" width="14" height="14">
                     </div>
                 </div>
 
-                <div class="radar-viewport" id="radar-viewport">
-                    <svg id="radar-svg" viewBox="0 0 1024 640" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Illustrative LiDAR scan of a room with 720 measurement points, the robot at the origin and the closest object 1.21 metres away.">
-                        <rect width="1024" height="640" fill="#11171B"></rect>
-                        <text x="512" y="320" fill="#7C8C97" text-anchor="middle" font-family="monospace">Loading scan…</text>
-                    </svg>
-                </div>
-
-                <div class="radar-legend">
-                    <div class="legend-items">
-                        <span class="legend-item">
-                            <span class="legend-dot" aria-hidden="true"></span>
-                            Measurement points
-                        </span>
-                        <span class="legend-item">
-                            <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                                <path d="M6.49999 1.08289L10.2921 11.375L6.49999 9.20823L2.70789 11.375L6.49999 1.08289Z" stroke-width="1.6" stroke-linecap="round" stroke="#EDF2F5"/>
+                <div class="library-filters">
+                    <div class="filter-group" role="group" aria-label="Filter maps">
+                        <button class="filter-chip is-active" id="filter-all" type="button" data-filter="all" aria-pressed="true">
+                            <span>All maps</span>
+                            <span class="filter-count mono" id="count-all">4</span>
+                        </button>
+                        <button class="filter-chip" id="filter-recent" type="button" data-filter="recent" aria-pressed="false">
+                            <span>Recent</span>
+                            <span class="filter-count mono" id="count-recent">2</span>
+                        </button>
+                    </div>
+                    <div class="view-toggle" role="group" aria-label="Library view">
+                        <button class="view-button is-active" id="view-grid" type="button" aria-pressed="true" aria-label="Grid view" title="Grid view">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                <path d="M2 2H7V7H2V2ZM9 2H14V7H9V2ZM2 9H7V14H2V9ZM9 9H14V14H9V9Z" stroke="currentColor" stroke-linecap="round"/>
                             </svg>
-                            Robot position
-                        </span>
+                        </button>
+                        <button class="view-button" id="view-list" type="button" aria-pressed="false" aria-label="List view" title="List view">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                                <path d="M2.5 3.5H13.5M2.5 8H13.5M2.5 12.5H13.5" stroke="currentColor" stroke-linecap="round"/>
+                            </svg>
+                        </button>
                     </div>
-                    <span class="legend-origin mono">Origin: robot · 0.00 / 0.00 m</span>
                 </div>
+
+                <div class="map-grid" id="map-grid" role="listbox" aria-label="Saved maps"></div>
+
+                <p class="map-empty" id="map-empty" role="status" hidden>
+                    No maps match this search. <button class="link-button" id="clear-search" type="button">Clear search</button>
+                </p>
+
+                <p class="library-note">
+                    <img class="icon" src="assets/icons/folder-open.svg" alt="" width="16" height="16">
+                    <span>Demo library · Maps are stored locally. Selecting a map does not send commands to a robot.</span>
+                </p>
             </section>
 
-            <aside class="side-panels" aria-label="Telemetry and controls">
-                <section class="card panel panel--telemetry" aria-labelledby="telemetry-title">
-                    <div class="panel-heading">
-                        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true">
-                            <path d="M15.5839 8.50001H13.8271C13.5175 8.49934 13.2162 8.60011 12.9693 8.78688C12.7224 8.97366 12.5435 9.23617 12.4599 9.53426L10.7952 15.4564C10.7845 15.4932 10.7621 15.5255 10.7314 15.5485C10.7008 15.5715 10.6635 15.5839 10.6252 15.5839C10.5869 15.5839 10.5496 15.5715 10.5189 15.5485C10.4883 15.5255 10.4659 15.4932 10.4552 15.4564L6.54485 1.54362C6.53412 1.50683 6.51175 1.47452 6.4811 1.45153C6.45044 1.42854 6.41316 1.41611 6.37484 1.41611C6.33652 1.41611 6.29923 1.42854 6.26858 1.45153C6.23792 1.47452 6.21555 1.50683 6.20482 1.54362L4.54011 7.46576C4.45685 7.76268 4.27898 8.02433 4.03351 8.21099C3.78804 8.39765 3.48837 8.49912 3.18 8.50001H1.41611" stroke-width="1.6" stroke-linecap="round" stroke="#A8B4BD"/>
-                        </svg>
-                        <h2 id="telemetry-title">LiDAR (/scan) Telemetry</h2>
+            <aside class="map-context" aria-labelledby="context-title">
+                <div class="context-header">
+                    <div class="context-title">
+                        <img class="icon" src="assets/icons/map.svg" alt="" width="17" height="17">
+                        <h2 id="context-title">Selected map</h2>
                     </div>
-                    <div class="telemetry-values">
-                        <div class="metric-row">
-                            <span class="metric-label">Point count</span>
-                            <span class="metric-big mono" id="point-count">720</span>
-                        </div>
-                        <div class="divider" role="presentation"></div>
-                        <div class="metric-block">
-                            <span class="metric-label">Closest object</span>
-                            <span class="metric-distance">
-                                <span class="distance-value mono" id="closest-distance">1,21</span>
-                                <span class="distance-unit mono">m</span>
-                            </span>
-                        </div>
-                    </div>
-                    <p class="note">
-                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                            <path d="M6.49999 8.66684V6.5M6.49999 4.33316H6.5054M11.9171 6.5C11.9171 9.49178 9.49177 11.9171 6.49999 11.9171C3.5082 11.9171 1.08289 9.49178 1.08289 6.5C1.08289 3.50822 3.5082 1.0829 6.49999 1.0829C9.49177 1.0829 11.9171 3.50822 11.9171 6.5Z" stroke-width="1.6" stroke-linecap="round" stroke="#7C8C97"/>
-                        </svg>
-                        Simulated values, not live telemetry.
-                    </p>
-                </section>
+                    <span class="demo-badge mono">DEMO PREVIEW</span>
+                </div>
 
-                <section class="card panel panel--zoom" aria-labelledby="zoom-title">
-                    <div class="panel-heading">
-                        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true">
-                            <path d="M2.125 4.95833V3.54167C2.125 3.16594 2.27426 2.80561 2.53993 2.53993C2.80561 2.27426 3.16594 2.125 3.54167 2.125H4.95833M12.0417 2.125H13.4583C13.8341 2.125 14.1944 2.27426 14.4601 2.53993C14.7257 2.80561 14.875 3.16594 14.875 3.54167V4.95833M14.875 12.0417V13.4583C14.875 13.8341 14.7257 14.1944 14.4601 14.4601C14.1944 14.7257 13.8341 14.875 13.4583 14.875H12.0417M4.95833 14.875H3.54167C3.16594 14.875 2.80561 14.7257 2.53993 14.4601C2.27426 14.1944 2.125 13.8341 2.125 13.4583V12.0417M11.3331 11.3331L10.0026 10.0026M10.0026 10.0026L9.98722 9.98722M10.0026 10.0026C10.3872 9.61805 10.625 9.0868 10.625 8.5C10.625 7.32639 9.6736 6.375 8.5 6.375C7.32639 6.375 6.375 7.32639 6.375 8.5C6.375 9.6736 7.32639 10.625 8.5 10.625C9.0868 10.625 9.61805 10.3872 10.0026 10.0026Z" stroke-width="1.6" stroke-linecap="round" stroke="#A8B4BD"/>
-                        </svg>
-                        <h2 id="zoom-title">Radar View (Zoom)</h2>
-                    </div>
-                    <div class="scale-row">
-                        <span class="scale-label">Scale:</span>
-                        <span class="scale-value">
-                            <span class="mono scale-number" id="scale-value">80</span>
-                            <span class="mono scale-unit">px / meter</span>
-                        </span>
-                    </div>
-                    <div class="zoom-buttons">
-                        <button class="btn" id="zoom-in" type="button">
-                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-                                <path d="M3.74939 9H8.99999M8.99999 9H14.2506M8.99999 9V3.7494M8.99999 9V14.2506" stroke-width="1.6" stroke-linecap="round" stroke="#EDF2F5"/>
-                            </svg>
-                            Zoom in
-                        </button>
-                        <button class="btn" id="zoom-out" type="button">
-                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-                                <path d="M3.74939 9H14.2506" stroke-width="1.6" stroke-linecap="round" stroke="#EDF2F5"/>
-                            </svg>
-                            Zoom out
-                        </button>
-                    </div>
-                    <p class="note note--plain">View is centered on the robot.</p>
-                </section>
+                <div class="context-map">
+                    <svg id="context-map-svg" viewBox="0 0 520 260" role="img" aria-label="Occupancy map preview"></svg>
+                    <span class="context-scale mono" aria-hidden="true"></span>
+                    <span class="context-scale-label mono">5 meters</span>
+                    <span class="context-frame mono">FRAME / map</span>
+                    <span class="context-orientation mono">N ↑</span>
+                </div>
 
-                <section class="card panel panel--navigation" aria-labelledby="navigation-title">
-                    <div class="panel-heading">
-                        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true">
-                            <path d="M2.125 7.79111L15.5833 1.41611L9.20833 14.8744L7.79167 9.20777L2.125 7.79111Z" stroke-width="1.6" stroke-linecap="round" stroke="#A8B4BD"/>
-                        </svg>
-                        <h2 id="navigation-title">Navigation</h2>
+                <div class="context-legend">
+                    <span class="legend-item">
+                        <span class="legend-dot" aria-hidden="true"></span>
+                        Mapped boundary
+                    </span>
+                    <span class="legend-item">
+                        <img class="icon" src="assets/icons/crosshair.svg" alt="" width="12" height="12">
+                        Saved base point
+                    </span>
+                    <span class="legend-type mono">2D / OCCUPANCY</span>
+                </div>
+
+                <div class="context-details" id="context-details" aria-live="polite">
+                    <div class="context-identity">
+                        <div class="context-name-row">
+                            <h3 id="context-name">Robotics lab</h3>
+                            <span class="context-id mono" id="context-id">MAP-001</span>
+                        </div>
+                        <p class="context-description" id="context-description">Indoor test environment with two rooms and a central passage.</p>
                     </div>
-                    <p class="nav-description">Returns the robot to its base point.</p>
-                    <button class="btn btn--wide" id="go-home" type="button" disabled>
-                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-                            <path d="M11.25 15.7494V9.74939C11.25 9.55048 11.171 9.35971 11.0303 9.21906C10.8897 9.07841 10.6989 8.99939 10.5 8.99939H7.5C7.30109 8.99939 7.11032 9.07841 6.96967 9.21906C6.82902 9.35971 6.75 9.55048 6.75 9.74939V15.7494M2.25 7.49975C2.24995 7.28155 2.2975 7.06597 2.38934 6.86804C2.48118 6.67011 2.6151 6.4946 2.78175 6.35375L8.03175 1.85375C8.30249 1.62493 8.64552 1.49939 9 1.49939C9.35448 1.49939 9.69751 1.62493 9.96825 1.85375L15.2183 6.35375C15.3849 6.4946 15.5188 6.67011 15.6107 6.86804C15.7025 7.06597 15.7501 7.28155 15.75 7.49975V14.2497C15.75 14.6476 15.592 15.0291 15.3107 15.3104C15.0294 15.5917 14.6478 15.7497 14.25 15.7497H3.75C3.35218 15.7497 2.97064 15.5917 2.68934 15.3104C2.40804 15.0291 2.25 14.6476 2.25 14.2497V7.49975Z" stroke-width="1.6" stroke-linecap="round" stroke="#EDF2F5"/>
-                        </svg>
-                        Base Point (Go Home)
-                    </button>
-                    <p class="note note--locked">
-                        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-                            <path d="M3.79167 5.41657V3.79144C3.79167 3.07308 4.07701 2.38415 4.58492 1.8762C5.09283 1.36825 5.78171 1.08289 6.5 1.08289C7.2183 1.08289 7.90717 1.36825 8.41508 1.8762C8.92299 2.38415 9.20833 3.07308 9.20833 3.79144V5.41657M3.79167 5.41657H2.70833C2.11002 5.41657 1.625 5.90163 1.625 6.49999V10.8337C1.625 11.432 2.11002 11.9171 2.70833 11.9171H10.2917C10.89 11.9171 11.375 11.432 11.375 10.8337V6.49999C11.375 5.90163 10.89 5.41657 10.2917 5.41657H9.20833M3.79167 5.41657H9.20833M7.04167 8.66683C7.04167 8.966 6.79915 9.20854 6.5 9.20854C6.20085 9.20854 5.95833 8.966 5.95833 8.66683C5.95833 8.36765 6.20085 8.12512 6.5 8.12512C6.79915 8.12512 7.04167 8.36765 7.04167 8.66683Z" stroke-width="1.6" stroke-linecap="round" stroke="#7C8C97"/>
-                        </svg>
-                        <span id="nav-note">In demo mode, commands cannot be sent. A live robot connection is required.</span>
+
+                    <dl class="context-metadata">
+                        <div class="context-property">
+                            <dt>Mapped area</dt>
+                            <dd class="mono" id="meta-area">240 m²</dd>
+                        </div>
+                        <div class="context-property">
+                            <dt>Dimensions</dt>
+                            <dd class="mono" id="meta-dimensions">20 × 12 m</dd>
+                        </div>
+                        <div class="context-property">
+                            <dt>Resolution</dt>
+                            <dd class="mono" id="meta-resolution">0.05 m / px</dd>
+                        </div>
+                        <div class="context-property">
+                            <dt>Coordinate frame</dt>
+                            <dd class="mono" id="meta-frame">map</dd>
+                        </div>
+                        <div class="context-property">
+                            <dt>Base point</dt>
+                            <dd class="mono" id="meta-base">0.00 / 0.00 m</dd>
+                        </div>
+                        <div class="context-property">
+                            <dt>Last updated</dt>
+                            <dd class="mono" id="meta-updated">Today, 09:42</dd>
+                        </div>
+                    </dl>
+
+                    <div class="context-file">
+                        <img class="icon" src="assets/icons/file.svg" alt="" width="13" height="13">
+                        <span class="file-name mono" id="file-name">robotics_lab.yaml</span>
+                        <span class="file-format mono" id="file-format">+ PGM · 1.2 MB</span>
+                    </div>
+
+                    <p class="context-notice">
+                        <img class="icon" src="assets/icons/unplug.svg" alt="" width="15" height="15">
+                        <span>No robot connected. You can explore this sample map; navigation and robot commands remain disabled.</span>
                     </p>
-                </section>
+
+                    <a class="open-workspace" id="open-workspace" href="workspace.html">
+                        <span>Open in Sensor Workspace</span>
+                        <img class="icon" src="assets/icons/arrow-right.svg" alt="" width="16" height="16">
+                    </a>
+
+                    <p class="context-note">
+                        <img class="icon" src="assets/icons/info.svg" alt="" width="12" height="12">
+                        <span>Opens a preview only. A robot will not be connected automatically.</span>
+                    </p>
+                </div>
             </aside>
         </main>
 
@@ -265,10 +299,12 @@
             <span class="status-right mono" id="status-right">ROS /scan · Live data stream disabled</span>
         </footer>
     </div>
-    <script src="js/roslib.min.js"></script>
+
+    <input type="file" id="map-file" accept=".yaml,.yml,.pgm,.png,.json" hidden>
+    <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
     <script src="src/session.js"></script>
-    <script src="src/scan-points.js"></script>
-    <script src="src/app.js"></script>
+    <script src="src/maps-data.js"></script>
+    <script src="src/maps.js"></script>
 </body>
 </html>
-

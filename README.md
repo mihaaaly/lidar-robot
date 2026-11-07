@@ -160,13 +160,14 @@ for start / log in / create account, hash routes (`#/auth`, `#/auth/login`,
 | :--- | :--- |
 | Screens, hash router, validation | `web/public/auth.html`, `src/auth.js`, `src/auth.css` |
 | Session helpers (`window.Session`) | `web/public/src/session.js` |
-| Dashboard guard + `Sign out` | `web/public/index.html`, `src/app.js`, `src/style.css` |
+| Map selection main screen (after sign-in) | `web/public/index.html`, `src/maps.js`, `src/maps-data.js`, `src/maps.css` |
+| Sensor Workspace guard + `Sign out` | `web/public/workspace.html`, `src/app.js`, `src/style.css` |
 
 - **Session:** `lidar.session` in `localStorage` (remember me, 7 days) or
   `sessionStorage` (tab lifetime, max 24 h). Only e-mail, display name and
   timestamps are stored — never a password.
 - **Demo mode:** `lidar.demoMode` (`"1"` / `"0"`) is shared between the auth
-  screens and the dashboard.
+  screens, the map selection screen and the workspace.
 - **Password policy (register):** 12+ characters with at least one number and
   one symbol; a 4-segment strength meter gives live feedback.
 - **No backend yet:** any valid e-mail plus any non-empty password signs in, and
@@ -179,6 +180,30 @@ for start / log in / create account, hash routes (`#/auth`, `#/auth/login`,
 
 Details, routes, storage schema and asset regeneration:
 [`lidar-robot/docs/auth.md`](lidar-robot/docs/auth.md).
+
+### 6.2. Map Selection (main screen)
+
+After sign-in the web UI opens the **Map selection** screen at the site root
+(`web/public/index.html`): a library of saved maps plus a detail panel for the
+selected one. It is a static demo over `src/maps-data.js`; nothing is read from
+the robot yet.
+
+| Piece | Where |
+| :--- | :--- |
+| Screen markup + session guard | `web/public/index.html` |
+| Library data (Figma geometry + metadata) | `web/public/src/maps-data.js` |
+| Rendering, selection, search, sort, filters | `web/public/src/maps.js` |
+| Screen styles (reuses `style.css` tokens) | `web/public/src/maps.css` |
+| Figma icons | `web/public/assets/icons/*.svg` |
+
+- **Selection:** stored as `lidar.map` (`{ id, name, at }`) in `localStorage`;
+  `Open in Sensor Workspace` navigates to `workspace.html`.
+- **Filtering:** live search on name/ID, `All maps` / `Recent`, sort by last
+  updated / name / area, grid and compact list view.
+- **Figma:** `LiDAR · Map selection` frame `43:4131` (1440 × 1000).
+
+Plan and measurements: [`lidar-robot/docs/map-selection-plan.md`](lidar-robot/docs/map-selection-plan.md).
+Implementation notes: [`lidar-robot/docs/map-selection.md`](lidar-robot/docs/map-selection.md).
 
 ---
 
