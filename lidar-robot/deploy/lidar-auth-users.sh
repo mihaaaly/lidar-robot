@@ -22,4 +22,4 @@ set -a
 source "$ENV_FILE"
 set +a
 
-exec /usr/bin/node "$SERVER_DIR/bin/users.js" "$@"
+exec /usr/bin/node --disable-warning=ExperimentalWarning "$SERVER_DIR/bin/users.js" "$@"
