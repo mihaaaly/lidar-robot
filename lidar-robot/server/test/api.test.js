@@ -531,3 +531,78 @@ test("the session cap keeps at most ten sessions per user", async function (t) {
         10
     );
 });
+
+test("TRUST_PROXY=0 ignores X-Forwarded-For for the IP limit", async function (t) {
+    const ctx = await start(t, { LOGIN_IP_LIMIT: "3", LOGIN_EMAIL_LIMIT: "100" });
+
+    for (let i = 0; i < 3; i += 1) {
+        const result = await request(ctx.base, "/api/auth/login", {
+            headers: { "X-Forwarded-For": "10.0.0." + i },
+            body: { email: "spoof" + i + "@example.com", password: "wrong-password-1!" }
+        });
+
+        assert.equal(result.status, 401);
+    }
+
+    const limited = await request(ctx.base, "/api/auth/login", {
+        headers: { "X-Forwarded-For": "10.0.0.99" },
+        body: { email: "spoof-last@example.com", password: "wrong-password-1!" }
+    });
+
+    assert.equal(limited.status, 429);
+});
+
+test("TRUST_PROXY=1 uses the first X-Forwarded-For entry", async function (t) {
+    const ctx = await start(t, {
+        TRUST_PROXY: "1",
+        LOGIN_IP_LIMIT: "2",
+        LOGIN_EMAIL_LIMIT: "100"
+    });
+
+    for (let i = 0; i < 2; i += 1) {
+        const result = await request(ctx.base, "/api/auth/login", {
+            headers: { "X-Forwarded-For": "10.1.1.1, 172.16.0.1" },
+            body: { email: "proxy" + i + "@example.com", password: "wrong-password-1!" }
+        });
+
+        assert.equal(result.status, 401);
+    }
+
+    const limited = await request(ctx.base, "/api/auth/login", {
+        headers: { "X-Forwarded-For": "10.1.1.1, 192.168.0.1" },
+        body: { email: "proxy-limited@example.com", password: "wrong-password-1!" }
+    });
+    const other = await request(ctx.base, "/api/auth/login", {
+        headers: { "X-Forwarded-For": "10.1.1.2" },
+        body: { email: "proxy-other@example.com", password: "wrong-password-1!" }
+    });
+
+    assert.equal(limited.status, 429);
+    assert.equal(other.status, 401);
+});
+
+test("PUBLIC_ORIGIN pins the accepted Origin header", async function (t) {
+    const origin = "http://robot.local:8080";
+    const ctx = await start(t, { PUBLIC_ORIGIN: origin });
+
+    const good = await request(ctx.base, "/api/auth/logout", {
+        method: "POST",
+        body: {},
+        headers: { Origin: origin }
+    });
+    const bad = await request(ctx.base, "/api/auth/logout", {
+        method: "POST",
+        body: {},
+        headers: { Origin: "http://robot.local:8081" }
+    });
+    const absent = await request(ctx.base, "/api/auth/logout", {
+        method: "POST",
+        body: {},
+        noOrigin: true
+    });
+
+    assert.equal(good.status, 200);
+    assert.equal(bad.status, 403);
+    assert.equal(bad.json.error.code, "forbidden_origin");
+    assert.equal(absent.status, 200);
+});
