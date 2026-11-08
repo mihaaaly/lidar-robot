@@ -1,6 +1,6 @@
 # Local SQLite databases (auth + robot)
-server/data/*.db*
-robot/data/*.db*
+**/server/data/*.db*
+**/robot/data/*.db*
 
 # Secrets / local environment
 .env
