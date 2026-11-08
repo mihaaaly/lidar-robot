@@ -14,6 +14,11 @@ const { createApp } = require("./app");
 const { ConfigError, loadConfig } = require("./lib/config");
 const { createLogger } = require("./lib/log");
 
+/* The database and its -wal/-shm files contain password hashes. SQLite creates
+   those side files with the process umask, so tighten it here as well as in the
+   systemd unit (UMask=0077). */
+process.umask(0o077);
+
 const REQUEST_TIMEOUT_MS = 15000;
 const HEADERS_TIMEOUT_MS = 10000;
 const KEEP_ALIVE_TIMEOUT_MS = 5000;

@@ -171,7 +171,9 @@ CREATE TABLE sessions (
 - Sessions expire absolutely (no sliding); remember sessions live 7 days, others
   24 hours. At most 10 sessions per user, oldest pruned. Expired rows are
   deleted at startup and every 15 minutes.
-- DB directory `0700`, DB file `0600`; the systemd unit sets `UMask=0077`.
+- DB directory `0700`, DB file `0600`; the service and CLI set `umask 077`
+  before SQLite creates the `-wal` / `-shm` files, and the systemd unit sets
+  `UMask=0077` as well.
 
 ---
 

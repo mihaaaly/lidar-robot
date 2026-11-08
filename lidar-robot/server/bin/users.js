@@ -18,6 +18,9 @@ const { ConfigError, loadConfig } = require("../lib/config");
 const { openDatabase } = require("../lib/db");
 const passwords = require("../lib/passwords");
 const sessions = require("../lib/sessions");
+
+/* Keep the DB, its -wal/-shm files and any backup at 0600. */
+process.umask(0o077);
 const users = require("../lib/users");
 const validate = require("../lib/validate");
 
