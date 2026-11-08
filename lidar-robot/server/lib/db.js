@@ -78,7 +78,17 @@ function currentVersion(db) {
 }
 
 function migrate(db) {
-    if (currentVersion(db) >= SCHEMA_VERSION) {
+    const version = currentVersion(db);
+
+    if (version > SCHEMA_VERSION) {
+        throw new Error(
+            "Database schema version " + version +
+            " is newer than this service supports (" + SCHEMA_VERSION +
+            "). Upgrade the service instead of running an older build against it."
+        );
+    }
+
+    if (version === SCHEMA_VERSION) {
         return;
     }
 
@@ -103,9 +113,19 @@ function openDatabase(dbPath) {
 
     const db = new DatabaseSync(dbPath);
 
-    applyPragmas(db);
-    migrate(db);
-    restrictFileMode(dbPath);
+    try {
+        applyPragmas(db);
+        migrate(db);
+        restrictFileMode(dbPath);
+    } catch (error) {
+        try {
+            db.close();
+        } catch (closeError) {
+            /* keep the original error */
+        }
+
+        throw error;
+    }
 
     return db;
 }
