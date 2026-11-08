@@ -174,6 +174,8 @@ CREATE TABLE sessions (
 - DB directory `0700`, DB file `0600`; the service and CLI set `umask 077`
   before SQLite creates the `-wal` / `-shm` files, and the systemd unit sets
   `UMask=0077` as well.
+- A database whose `user_version` is newer than the service supports is
+  refused at startup, so an older build cannot write into a newer schema.
 
 ---
 
