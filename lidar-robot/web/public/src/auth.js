@@ -661,6 +661,8 @@
         }
 
         clearFormError(els.loginFormError);
+        clearError(els.loginEmail, els.loginEmailError);
+        clearError(els.loginPassword, els.loginPasswordError);
 
         email = els.loginEmail.value.trim();
         password = els.loginPassword.value;
@@ -725,6 +727,11 @@
         }
 
         clearFormError(els.registerFormError);
+        clearError(els.registerName, els.registerNameError);
+        clearError(els.registerEmail, els.registerEmailError);
+        clearError(els.registerPassword, els.registerPasswordError);
+        clearError(els.registerConfirm, els.registerConfirmError);
+        clearError(els.registerConsent, els.registerConsentError);
 
         name = els.registerName.value.replace(/^\s+|\s+$/g, "");
         email = els.registerEmail.value.trim();
