@@ -59,9 +59,10 @@ The entire software stack—including the ROS 2 backend, Node-RED automation eng
 
 <img width="500" height="1001" alt="Untitled diagram-2026-10-18-194754" src="https://github.com/user-attachments/assets/ad2d1692-350f-4aae-86bd-9822883ebfc3" />
 
-### Data Flow Diagram
+### Architecture Diagram
 
-<img width="800" height="800" alt="architektura_kozepre_igazitva" src="https://github.com/user-attachments/assets/d2fa2cfc-0e5e-481e-882b-d3510a1523f1" />
+<img width="800" height="800" alt="architecture" src="https://github.com/user-attachments/assets/7c8468b4-2667-44bc-9b1b-023b3e8622e6" />
+
 
 
 ### System Structure
@@ -91,7 +92,7 @@ The entire software stack—including the ROS 2 backend, Node-RED automation eng
 - "Go Home" — partially: the Node-RED flow builds `/goal_pose`, Nav2 execution is not wired yet
 - Map switching interface — implemented as a static demo over `maps-data.js`
 
-**5. Database Diagramm Data-Flow Diagram**
+**5. Database Diagram**
 
 <img width="1305" height="1116" alt="Lidar_Robot_Diagram" src="https://github.com/user-attachments/assets/04dbe159-63c5-4895-8526-e06647dc9a67" />
 
