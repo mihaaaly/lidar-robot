@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+# The repository root is the outer folder; the Node project lives one level down.
+defaults:
+  run:
+    working-directory: lidar-robot/server
+
+jobs:
+  server:
+    name: server (node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 22 is the documented floor (engines: >=22.16), 24 is what development runs on.
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Syntax check
+        run: npm run check
+
+      - name: Tests with coverage gate
+        run: npm run coverage
+
+      # Type checking keeps the project dependency-free: TypeScript is installed
+      # transiently, never added to package.json.
+      - name: Type check (jsdoc + checkJs)
+        run: |
+          npm install --no-save --no-package-lock typescript@5 @types/node@22
+          npm run typecheck
