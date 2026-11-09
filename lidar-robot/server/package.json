@@ -11,6 +11,9 @@
   "scripts": {
     "start": "node server.js",
     "test": "node --test test/*.test.js",
-    "test:api": "node --test test/api.test.js"
+    "test:api": "node --test test/api.test.js",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-lines=90 --test-coverage-branches=75 test/*.test.js",
+    "check": "for f in server.js app.js lib/*.js bin/*.js test/*.js; do node --check \"$f\" || exit 1; done",
+    "typecheck": "tsc -p ."
   }
 }

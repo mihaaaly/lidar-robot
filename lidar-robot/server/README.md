@@ -28,6 +28,27 @@ AUTH_PORT=8787 node server.js
 The first start creates `server/data/auth.db` (directory `0700`, file `0600`).
 Registration is enabled by default locally.
 
+## Quality gate
+
+```bash
+npm test          # 85 tests, node:test, temp DBs (touches no real data)
+npm run coverage  # same tests + 90% line / 75% branch thresholds (fails below)
+npm run check     # node --check on every source and test file
+npm run typecheck # tsc -p . (checkJs, strictNullChecks) — needs tsc installed
+```
+
+`npm run typecheck` is the only command that needs a tool outside Node: TypeScript
+is installed transiently and **never** added to `package.json`, so the service stays
+dependency-free at runtime:
+
+```bash
+npm install --no-save --no-package-lock typescript@5 @types/node@22
+```
+
+CI (`.github/workflows/ci.yml`) runs `check`, `coverage` and `typecheck` on Node 22
+and 24 for every push and pull request. Type checking deliberately excludes `test/`
+for now — the test helpers are dynamic fixtures; the server code is what is checked.
+
 ```bash
 npm test          # node --test test/*.test.js
 npm run test:api  # integration tests only
