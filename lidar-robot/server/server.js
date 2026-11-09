@@ -24,15 +24,23 @@ const HEADERS_TIMEOUT_MS = 10000;
 const KEEP_ALIVE_TIMEOUT_MS = 5000;
 const SHUTDOWN_TIMEOUT_MS = 5000;
 
+/* Normalise an unknown thrown value into loggable fields. `uncaughtException`
+   and `unhandledRejection` deliver `unknown` in current @types/node, so read
+   the fields defensively instead of assuming an Error instance. */
+function describeError(error) {
+    if (error instanceof Error) {
+        return { message: error.message, stack: error.stack };
+    }
+    return { message: String(error) };
+}
+
 function createAppSafely(config, logger) {
     try {
         return createApp(config, { logger: logger });
     } catch (error) {
-        logger.error("database_open_error", {
-            dbPath: config.dbPath,
-            message: error && error.message,
-            stack: error && error.stack
-        });
+        logger.error("database_open_error", Object.assign({
+            dbPath: config.dbPath
+        }, describeError(error)));
         process.exit(1);
     }
 }
@@ -98,18 +106,12 @@ function main() {
     process.on("SIGINT", function () { shutdown("SIGINT"); });
 
     process.on("uncaughtException", function (error) {
-        logger.error("uncaught_exception", {
-            message: error && error.message,
-            stack: error && error.stack
-        });
+        logger.error("uncaught_exception", describeError(error));
         process.exit(1);
     });
 
     process.on("unhandledRejection", function (error) {
-        logger.error("unhandled_rejection", {
-            message: error && error.message,
-            stack: error && error.stack
-        });
+        logger.error("unhandled_rejection", describeError(error));
         process.exit(1);
     });
 

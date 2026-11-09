@@ -46,6 +46,13 @@ cascades to the sessions. backup uses SQLite's online backup API and is
 safe while the service is running.
 `;
 
+/**
+ * Print a message on stderr and terminate the process.
+ *
+ * @param {string} message
+ * @param {number} [code]
+ * @returns {never}
+ */
 function fail(message, code) {
     process.stderr.write(message.replace(/\n?$/, "\n"));
     process.exit(code === undefined ? 1 : code);

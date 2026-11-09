@@ -125,6 +125,17 @@ function normalizePathname(pathname) {
     return { path: normalized };
 }
 
+/**
+ * Resolve a request path to a readable file inside the web root.
+ *
+ * Returns exactly one of the two shapes so callers can narrow on
+ * `"error" in safe`; the union is explicit because inference widens it to a
+ * single object with optional fields, which defeats the check.
+ *
+ * @param {string} webRoot
+ * @param {string} pathname
+ * @returns {Promise<{ file: string, size: number } | { error: number }>}
+ */
 async function safeFile(webRoot, pathname) {
     const segments = pathname.split("/").filter(Boolean);
 
@@ -196,7 +207,7 @@ function createStaticHandler(config, deps) {
     async function serveFile(req, res, pathname) {
         const safe = await safeFile(config.webRoot, pathname);
 
-        if (safe.error) {
+        if ("error" in safe) {
             sendText(res, safe.error, safe.error === 403 ? "Forbidden" : "Not found");
             return;
         }
