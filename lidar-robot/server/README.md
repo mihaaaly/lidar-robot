@@ -31,7 +31,7 @@ Registration is enabled by default locally.
 ## Quality gate
 
 ```bash
-npm test          # 85 tests, node:test, temp DBs (touches no real data)
+npm test          # 95 tests, node:test, temp DBs (touches no real data)
 npm run coverage  # same tests + 90% line / 75% branch thresholds (fails below)
 npm run check     # node --check on every source and test file
 npm run typecheck # tsc -p . (checkJs, strictNullChecks) — needs tsc installed

@@ -70,11 +70,11 @@ Mindkettő `.gitignore`-olt (`**/data/*.db*`); a `-wal`/`-shm` fájlok hiánya n
 
 | Komponens | Állapot |
 | :-- | :-- |
-| Statikus UI + szerveroldali session gate | ✅ 85 teszt, 91% line coverage |
+| Statikus UI + szerveroldali session gate | ✅ 95 teszt, 91% line coverage |
 | Auth API (register/login/session/logout, rate limit, CSRF origin check) | ✅ |
 | Admin CLI (add/list/passwd/remove/backup) | ✅ |
 | Deploy: systemd unit, env example, users wrapper | ✅ (Pi-n még nem verifikálva élesben) |
-| Térképválasztó UI | ✅ statikus demo (`maps-data.js`), robot-adat nélkül |
+| Térképválasztó UI + workspace map context | ✅ statikus demo (`maps-data.js`), robot-adat nélkül |
 | LiDAR driver + rosbridge + foxglove | ✅ launch fájl kész |
 | Node-RED flow-k (`/api/maps`, `/api/go-home`) | ✅ fájlban; Pi-n futás verifikálandó |
 | Motor driver, enkóder/IMU fúzió (`/odom`) | ⬜ |

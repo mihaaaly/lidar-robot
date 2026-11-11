@@ -52,8 +52,10 @@ A kanonikus alak (a `robot/data/robot.db` `maps` táblája és a UI között):
 SQLite leképezés (`maps` tábla): `map_name`, `map_file`, `home_x`, `home_y`,
 `home_theta`, `is_active`. A UI oldalon a kiválasztott térkép a
 `lidar.map` kulcsban él (`localStorage`, `{ id, name, at }`) — ez **kliens-oldali**
-állapot, nem a robot állapota. A kettő összekötése még nem történik meg
-(`web/public/src/maps-data.js` statikus adat).
+állapot, nem a robot állapota. Ezt a kulcsot a térképválasztó főképernyő mellett a
+`workspace.html` page-context sávja is olvassa (`web/public/src/map-storage.js`,
+`workspace-map.js`), de csak megjelenítésre. A robot-oldali `maps` táblával való
+összekötés továbbra sem történik meg (`web/public/src/maps-data.js` statikus adat).
 
 ## 4. Node-RED HTTP API
 

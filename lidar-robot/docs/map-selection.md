@@ -24,12 +24,15 @@ web/public/
 └── src/
     ├── maps.css              # a főképernyő stílusai (a style.css tokenjeire épül)
     ├── maps-data.js          # demo térképkönyvtár: metaadat + Figma-geometria
-    └── maps.js               # renderelés, kiválasztás, keresés, szűrés, toast
+    ├── map-storage.js        # a `lidar.map` közös olvasó/író helperje (DOM nélkül)
+    ├── maps.js               # renderelés, kiválasztás, keresés, szűrés, toast
+    └── workspace-map.js      # a kiválasztott térkép a workspace page-contextben
 ```
 
 Nincs build és nincs npm dependency. A betöltési sorrend az `index.html`-ben:
-`session.js` → `maps-data.js` → `maps.js`; a session-guard inline, a `<head>`-ben
-fut (mint a `workspace.html`-en).
+`session.js` → `maps-data.js` → `map-storage.js` → `maps.js`; a `workspace.html`
+ugyanezt tölti be, a végén a `src/workspace-map.js`-sel. A session-guard inline,
+a `<head>`-ben fut (mint a `workspace.html`-en).
 
 ---
 
@@ -112,6 +115,34 @@ A kiválasztás sémája:
 { "id": "MAP-001", "name": "Robotics lab", "at": 1730000000000 }
 ```
 
+A sémát egyetlen hely olvassa és írja: a `src/map-storage.js` `window.MapStorage`
+objektuma (`KEY`, `read`, `resolve`, `save`). A `maps.js` és a workspace is ezen
+keresztül éri el, így a hibakezelés (hiányzó kulcs, hibás JSON, nem-string `id`,
+ismeretlen `id`, tiltott `localStorage`) egy helyen van, és DOM nélkül tesztelhető
+(`server/test/frontend-map-storage.test.js`).
+
+---
+
+## Workspace map context
+
+A `workspace.html` page-context sávja (a `Sensor Workspace` cím jobb oldalán) a
+`localStorage["lidar.map"]` kiválasztást mutatja; a bekötés a `src/workspace-map.js`.
+
+| Elem | Forrás | Üres / érvénytelen állapot |
+| :-- | :-- | :-- |
+| név | `map.name` | `No map selected` |
+| azonosító | `map.id` (mono) | üres, a CSS `:empty` rejti |
+| részletek | `map.dimensions + " · base " + map.baseCoordinates` | üres, a CSS `:empty` rejti |
+| link | `href="./"` (a `/` térképválasztó), felirata `Change map` | felirata `Choose map` |
+
+- A feloldás `window.MapStorage.resolve(localStorage, MAP_LIBRARY.maps)`: ismeretlen
+  vagy törölt `id` → üres állapot, **nincs** csendes visszaesés a `MAP-001`-re.
+- Üres/hibás állapotban az oldal nem irányít át, tehát a deep link és a refresh
+  működik; a szerveroldali session gate változatlan.
+- A gyökér `data-state` attribútuma `selected` / `empty`; a `MAP_LIBRARY` a
+  `maps-data.js`-ből jön, tehát a dashboard ugyanazt a demó könyvtárat használja,
+  mint a főképernyő. A robot-oldali `maps` táblához még nem kapcsolódik.
+
 ---
 
 ## Design-eltérések (szándékos)
@@ -164,11 +195,8 @@ Funkcionális ellenőrzés (headless Chromium, CDP):
 
 ## Következő lépések (nem része ennek a szeletnek)
 
-1. A `workspace.html` még nem jeleníti meg a kiválasztott térképet; a `lidar.map`
-   beolvasása és a fejléc `Change map` visszavezető link a dashboard design
-   frissítésével együtt jöhet.
-2. Valódi térképkönyvtár: a `maps-data.js` cseréje a robotról jövő
+1. Valódi térképkönyvtár: a `maps-data.js` cseréje a robotról jövő
    `map_server` listára / Node-RED SQLite `maps` táblára (lásd `interface.md`).
-3. Feltöltés: az `Import map` bekötése (YAML + PGM validáció, mentés a robotra).
-4. A scan-pontok generálása helyett élő `/scan` alapú előnézet, ha lesz valós
+2. Feltöltés: az `Import map` bekötése (YAML + PGM validáció, mentés a robotra).
+3. A scan-pontok generálása helyett élő `/scan` alapú előnézet, ha lesz valós
    ROS kapcsolat.

@@ -40,7 +40,7 @@ TLS továbbra sincs: a service megbízható LAN-ra készült. HTTPS-hez reverse 
 web/public/
 ├── auth.html                     # a három nézet egy fájlban (hash routing)
 ├── index.html                    # Map Selection főképernyő + inline demo guard
-├── workspace.html                # Sensor Workspace dashboard + guard + Sign out
+├── workspace.html                # Sensor Workspace dashboard + guard + Sign out + térkép-kontextus
 ├── assets/auth-sensor-preview.svg  # statikus LiDAR preview (Figma export)
 ├── assets/icons/*.svg            # a főképernyő Figma ikonjai
 └── src/
@@ -48,7 +48,9 @@ web/public/
     ├── auth.css                  # auth layout + form komponensek
     ├── maps.css                  # Map Selection layout
     ├── maps-data.js              # demo térképkönyvtár (geometria + metaadat)
+    ├── map-storage.js            # a `lidar.map` közös olvasó/író helperje (map selection + workspace)
     ├── maps.js                   # kiválasztás, keresés, szűrés, renderelés
+    ├── workspace-map.js          # a kiválasztott térkép a workspace page-context sávban
     ├── session.js                # window.Session storage helperek + backend detektálás
     ├── auth.js                   # router, validáció, server/demo ág
     └── app.js                    # demo mód visszaolvasás + sign out

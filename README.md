@@ -162,7 +162,7 @@ lidar_project/lidar-robot/          # git root — this README lives here
     │   ├── lib/                     # config, db, users, passwords, sessions, cookies,
     │   │                            # validate, ratelimit, security, static, http, log
     │   ├── bin/users.js             # admin CLI (add, list, passwd, remove, backup)
-    │   ├── test/                    # node:test suite (85 tests)
+    │   ├── test/                    # node:test suite (95 tests)
     │   ├── tsconfig.json            # checkJs type checking, no dependencies
     │   ├── package.json
     │   └── README.md

@@ -7,10 +7,12 @@ A **kiszolgált** web root a `public/`. A `../server/` Node service szolgálja k
 | :-- | :-- |
 | `public/auth.html` | start / login / register képernyők, hash route: `#/auth`, `#/auth/login`, `#/auth/register` |
 | `public/index.html` | bejelentkezés utáni főképernyő: térképválasztás |
-| `public/workspace.html` | sensor workspace (élő `/scan` canvas) |
+| `public/workspace.html` | sensor workspace (élő `/scan` canvas) + a kiválasztott térkép a page-context sávban |
 | `public/src/session.js` | `window.Session`: szerver-mód ↔ demo mód, `lidar_auth` / `lidar_backend` hint, `logout()` |
 | `public/src/auth.js`, `auth.css` | auth képernyők logikája és stílusa |
 | `public/src/maps.js`, `maps-data.js`, `maps.css` | térképkönyvtár, szűrés/rendezés, kiválasztás (`lidar.map`) |
+| `public/src/map-storage.js` | `window.MapStorage`: a `lidar.map` közös olvasó/író helperje (térképválasztó + workspace) |
+| `public/src/workspace-map.js` | a kiválasztott térkép megjelenítése a workspace page-context sávban |
 | `public/src/app.js`, `scan-points.js`, `style.css` | workspace: rosbridge kapcsolat, `/scan` rajzolás |
 | `public/js/roslib.min.js` | ROSLIB (vendored, nincs build lépés) |
 | `public/assets/` | SVG ikonok, auth illusztrációk |
