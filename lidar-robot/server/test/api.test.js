@@ -491,6 +491,9 @@ test("a real session opens the map and workspace pages and redirects /auth.html"
     assert.match(root.text, /Map Selection/);
     assert.equal(workspace.status, 200);
     assert.match(workspace.text, /Sensor Workspace/);
+    assert.match(workspace.text, /id="workspace-map"/);
+    assert.match(workspace.text, /No map selected/);
+    assert.match(workspace.text, /src\/workspace-map\.js/);
     assert.equal(auth.status, 302);
     assert.equal(auth.headers.get("location"), "/");
 });
@@ -498,12 +501,18 @@ test("a real session opens the map and workspace pages and redirects /auth.html"
 test("public assets are served and server-side files stay hidden", async function (t) {
     const ctx = await start(t);
     const asset = await request(ctx.base, "/src/session.js", { noOrigin: true });
+    const mapStorage = await request(ctx.base, "/src/map-storage.js", { noOrigin: true });
+    const workspaceMap = await request(ctx.base, "/src/workspace-map.js", { noOrigin: true });
     const env = await request(ctx.base, "/.env", { noOrigin: true });
     const serverFile = await request(ctx.base, "/server/server.js", { noOrigin: true });
     const traversal = await request(ctx.base, "/src/%2e%2e/%2e%2e/server/server.js", { noOrigin: true });
 
     assert.equal(asset.status, 200);
     assert.match(asset.headers.get("content-type"), /^text\/javascript; charset=utf-8$/);
+    assert.equal(mapStorage.status, 200);
+    assert.match(mapStorage.headers.get("content-type"), /^text\/javascript; charset=utf-8$/);
+    assert.equal(workspaceMap.status, 200);
+    assert.match(workspaceMap.headers.get("content-type"), /^text\/javascript; charset=utf-8$/);
     assert.equal(env.status, 404);
     assert.equal(serverFile.status, 404);
     assert.equal(traversal.status, 404);
