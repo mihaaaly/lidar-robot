@@ -14,7 +14,6 @@
     var SVG_NS = "http://www.w3.org/2000/svg";
     var library = window.MAP_LIBRARY || { maps: [] };
     var maps = (library.maps || []).slice();
-    var STORAGE_KEY = library.storageKey || "lidar.map";
     var HERO_LABEL_OFFSET = 9;
     var TOAST_MS = 4200;
 
@@ -490,38 +489,14 @@
     }
 
     function persistSelection(map) {
-        try {
-            window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
-                id: map.id,
-                name: map.name,
-                at: Date.now()
-            }));
-        } catch (error) {
-            /* Storage can be blocked; the screen keeps working without it. */
-        }
+        /* Storage can be blocked; the screen keeps working without it. */
+        window.MapStorage.save(window.localStorage, map);
     }
 
     function restoreSelection() {
-        var raw;
-        var data;
+        var map = window.MapStorage.resolve(window.localStorage, maps);
 
-        try {
-            raw = window.localStorage.getItem(STORAGE_KEY);
-        } catch (error) {
-            return null;
-        }
-
-        if (!raw) {
-            return null;
-        }
-
-        try {
-            data = JSON.parse(raw);
-        } catch (error) {
-            return null;
-        }
-
-        return data && data.id && findMap(data.id) ? data.id : null;
+        return map ? map.id : null;
     }
 
     function selectMap(id, options) {
