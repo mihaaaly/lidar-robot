@@ -269,6 +269,13 @@ function createStaticHandler(config, deps) {
         const token = parsedCookies[cookies.SESSION_COOKIE];
         const session = findSession(token);
 
+        /* Pages served through the gate are authenticated too, so the request
+           log can attribute them to the user. The API handlers set ctx.userId
+           themselves; this covers the static branch. */
+        if (ctx && session) {
+            ctx.userId = session.userId;
+        }
+
         if (kind === "protected") {
             if (!session) {
                 if (token) {

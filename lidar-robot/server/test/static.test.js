@@ -145,6 +145,30 @@ test("the protected pages are served with a valid session and refresh the hint",
     assert.ok(setCookies.some(function (cookie) { return cookie.startsWith("lidar_auth=1; Max-Age="); }));
 });
 
+test("a gate-en kiszolgalt oldal userId-t ad a request loghoz", async function (t) {
+    const fixture = withFixture(t);
+    const ctx = { requestId: "test-request", userId: null };
+    const req = fakeRequest({ pathname: "/workspace.html", cookie: "lidar_session=good" });
+    const res = fakeResponse(req);
+
+    await fixture.handler(req, res, ctx, req.url);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(ctx.userId, SESSION.userId);
+});
+
+test("session nelkul a request log userId-je null marad", async function (t) {
+    const fixture = withFixture(t);
+    const ctx = { requestId: "test-request", userId: null };
+    const req = fakeRequest({ pathname: "/" });
+    const res = fakeResponse(req);
+
+    await fixture.handler(req, res, ctx, req.url);
+
+    assert.equal(res.statusCode, 302);
+    assert.equal(ctx.userId, null);
+});
+
 test("a stale session cookie is cleared on the protected redirect", async function (t) {
     const fixture = withFixture(t);
     const res = await call(fixture, {
