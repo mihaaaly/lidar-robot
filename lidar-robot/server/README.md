@@ -72,7 +72,7 @@ message instead of leaving a half-running service.
 | `AUTH_PORT` | `8787` | Port. Pi: `8080`. |
 | `AUTH_DB_PATH` | `./data/auth.db` | SQLite file, relative to `server/`. |
 | `WEB_ROOT` | `../web/public` | Static web root, relative to `server/`. |
-| `PUBLIC_ORIGIN` | empty | e.g. `http://192.168.1.50:8080`. Empty → derived from `Host`. |
+| `PUBLIC_ORIGIN` | empty | Empty → derived from the request `Host` (recommended on the Pi: the address can change over DHCP). Set it only for a fixed address, e.g. `http://192.168.1.22:8080`. |
 | `TRUST_PROXY` | `0` | `1` only behind a trusted reverse proxy (uses `X-Forwarded-For`). |
 | `COOKIE_SECURE` | `0` | `1` only with HTTPS. |
 | `ALLOW_REGISTRATION` | `1` | `0` → `403 registration_disabled` (recommended on the Pi). |
@@ -264,7 +264,9 @@ check). HTML is `no-store`, assets are `no-cache` (revalidate; no ETag/304).
   not reveal account existence.
 - Passwords, tokens, cookie values and bodies are never logged. Logs are JSON
   lines on stdout (journald): `ts, level, event, method, path, status, ms, ip,
-  userId, requestId, code`.
+  userId, requestId, code`. `userId` is set for authenticated API calls **and**
+  for pages served through the static gate; it stays `null` for anonymous
+  requests.
 - Rate limits are in-memory (restart resets them): login 20/IP and 10/email per
   15 minutes, register 10/IP per hour. `Retry-After` is always sent on `429`.
 - `TRUST_PROXY=0` ignores `X-Forwarded-For` entirely, so a client cannot spoof

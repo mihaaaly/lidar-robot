@@ -248,7 +248,7 @@ a Pi deploy külön mappaként kezeli.
 | `AUTH_PORT` | `8787` | Port. Pi-n `8080` (a meglévő URL). |
 | `AUTH_DB_PATH` | `./data/auth.db` | SQLite fájl; a `server/` mappához relatívan oldjuk fel. Pi-n `robot/data/auth.db`. |
 | `WEB_ROOT` | `../web/public` | Statikus web root; a `server/` mappához relatívan. |
-| `PUBLIC_ORIGIN` | üres | Pl. `http://192.168.1.50:8080`. Ha üres, a `Host` headerből deriváljuk. |
+| `PUBLIC_ORIGIN` | üres | Pl. `http://<pi-ip>:8080`. Ha üres, a `Host` headerből deriváljuk. |
 | `TRUST_PROXY` | `0` | `1` csak Nginx reverse proxy mögött; ekkor `X-Forwarded-For` / `X-Forwarded-Proto` használható. |
 | `COOKIE_SECURE` | `0` | `1` csak HTTPS-en; HTTP-n a `Secure` cookie nem menne át. |
 | `ALLOW_REGISTRATION` | `1` | `0` → a register `403`; a Pi env-ben `0` ajánlott. |
@@ -307,7 +307,7 @@ AUTH_HOST=0.0.0.0
 AUTH_PORT=8080
 AUTH_DB_PATH=/home/admin/lidar-robot/lidar-robot/robot/data/auth.db
 WEB_ROOT=/home/admin/lidar-robot/lidar-robot/web/public
-PUBLIC_ORIGIN=http://192.168.1.50:8080
+PUBLIC_ORIGIN=
 ALLOW_REGISTRATION=0
 COOKIE_SECURE=0
 TRUST_PROXY=0
@@ -318,7 +318,7 @@ LOG_LEVEL=info
 > headerből derivál), vagy adj DHCP reservationt és írd be a fix IP-t.
 >
 > A `PUBLIC_ORIGIN`-nek **pontosan** egyeznie kell a böngésző címsorában
-> látható originnal (séma + host + port). Ha `http://192.168.1.50:8080` van
+> látható originnal (séma + host + port). Ha `http://<pi-ip>:8080` van
 > beállítva, de a böngésző `http://robot.local:8080`-on nyitja meg, a POST-ok
 > `403 forbidden_origin`-t kapnak. Ilyenkor vagy egységesítsd a címet, vagy
 > hagyd üresen a változót.
@@ -990,7 +990,7 @@ sudo editor /etc/lidar-auth.env
 ```
 
 - Állítsd be a `PUBLIC_ORIGIN`-t a Pi elérhetőségére (pl.
-  `http://192.168.1.50:8080`), vagy hagyd üresen.
+  `http://<pi-ip>:8080`), vagy hagyd üresen.
 - A Pi-n `ALLOW_REGISTRATION=0` ajánlott; a fiókot admin CLI-vel hozd létre.
 - Hozd létre a DB könyvtárat **a service indulása előtt** (a systemd
   `ReadWritePaths` miatt; a Node-RED `robot.db`-je is itt van, ezért ellenőrizd
@@ -1360,7 +1360,7 @@ AUTH_HOST=0.0.0.0
 AUTH_PORT=8080
 AUTH_DB_PATH=/home/admin/lidar-robot/lidar-robot/robot/data/auth.db
 WEB_ROOT=/home/admin/lidar-robot/lidar-robot/web/public
-PUBLIC_ORIGIN=http://192.168.1.50:8080
+PUBLIC_ORIGIN=
 ALLOW_REGISTRATION=0
 COOKIE_SECURE=0
 TRUST_PROXY=0

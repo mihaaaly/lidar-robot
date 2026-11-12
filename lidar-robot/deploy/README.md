@@ -44,12 +44,17 @@ A backend részletei: [`../server/README.md`](../server/README.md).
     sudo install -m 640 -o root -g admin deploy/lidar-auth.env.example /etc/lidar-auth.env
     sudo editor /etc/lidar-auth.env
 
-- Állítsd be a `PUBLIC_ORIGIN`-t a Pi elérhetőségére (pl.
-  `http://192.168.1.50:8080`), vagy hagyd üresen (a `Host` headerből derivál).
+- **Hagyd üresen a `PUBLIC_ORIGIN`-t**, ha az IP DHCP-vel változhat: ilyenkor a
+  `Host` headerből deriváljuk az origint (ez a Pi-n bevált beállítás). Csak fix
+  címnél írd be pontosan (séma + host + port), pl. `http://192.168.1.22:8080`.
 - A Pi-n `ALLOW_REGISTRATION=0` ajánlott; a fiókot admin CLI-vel hozd létre.
+  Ha demóhoz/teszthez a böngészőből is akarsz regisztrálni, állítsd `1`-re és
+  indítsd újra a service-t (`EnvironmentFile` csak induláskor olvasódik).
+  Ilyenkor a `#/auth/register` űrlap működik, a szerver `201`-et ad és azonnal
+  létrehozza a sessiont; a limit regisztrációra 10/IP/óra.
 - A `PUBLIC_ORIGIN`-nek **pontosan** egyeznie kell a böngésző címsorában látható
   originnal (séma + host + port), különben a POST-ok `403 forbidden_origin`-t
-  kapnak. Ha DHCP-vel változhat az IP, hagyd üresen.
+  kapnak.
 
 **3. DB könyvtár (a service indulása előtt):**
 
@@ -68,9 +73,11 @@ A backend részletei: [`../server/README.md`](../server/README.md).
     sudo systemctl status lidar-auth.service
     sudo journalctl -u lidar-auth.service -f
 
-> A `ProtectHome=read-only` + `ReadWritePaths` kombinációt a Pi-n tesztelni kell;
-> ha a DB nem írható, a `ProtectHome` sor elhagyható a unitból. A
-> `--disable-warning=ExperimentalWarning` csak a journal zaját csökkenti.
+> A `ProtectHome=read-only` + `ReadWritePaths` kombináció a Pi-n (2026-11-12)
+> mérve működik: a statikus kiszolgálás és a `robot/data/auth.db` írása is
+> rendben van. Ha egy másik rendszeren a DB mégis írhatatlan lenne, a
+> `ProtectHome` sor elhagyható a unitból. A `--disable-warning=ExperimentalWarning`
+> csak a journal zaját csökkenti.
 
 **5. CLI wrapper és az első fiók:**
 

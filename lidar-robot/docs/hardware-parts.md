@@ -34,7 +34,8 @@ sudo usermod -aG dialout admin
 
 Hálózat: NetworkManager renderer (`/etc/netplan/99-networkmanager.yaml`), közvetlen
 kártyás kapcsolathoz link-local profil (`nmcli connection add … ipv4.method link-local`).
-A Pi a deploy dokumentáció szerint `192.168.1.50`, a deploy mappa
+A Pi címe DHCP-s, mDNS-en `pi5-ros.local` (a 2026-11-12-i mérés szerint
+`192.168.1.22`; a korábbi doksikban szereplő `.50` elavult), a deploy mappa
 `/home/admin/lidar-robot/lidar-robot`.
 
 ## 3. Ami hiányzik a listáról (nyitott kérdés)
