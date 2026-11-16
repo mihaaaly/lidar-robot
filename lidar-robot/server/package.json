@@ -1,0 +1,19 @@
+{
+  "name": "lidar-auth",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Zero-dependency Node.js auth backend and static web host for the LiDAR robot UI.",
+  "type": "commonjs",
+  "main": "server.js",
+  "engines": {
+    "node": ">=22.16.0"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/*.test.js",
+    "test:api": "node --test test/api.test.js",
+    "coverage": "node --test --experimental-test-coverage --test-coverage-lines=90 --test-coverage-branches=75 test/*.test.js",
+    "check": "for f in server.js app.js lib/*.js bin/*.js test/*.js; do node --check \"$f\" || exit 1; done",
+    "typecheck": "tsc -p ."
+  }
+}

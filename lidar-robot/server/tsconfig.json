@@ -1,0 +1,21 @@
+{
+  "//": "Type checking for the plain-JS server. No emit, no dependencies: run `npm run typecheck` after `npm i --no-save typescript @types/node` (or in CI).",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": ["ES2023"],
+    "types": ["node"],
+    "strict": false,
+    "noImplicitAny": false,
+    "strictNullChecks": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true
+  },
+  "include": ["server.js", "app.js", "lib/**/*.js", "bin/**/*.js"]
+}

@@ -53,7 +53,8 @@
         statusCopy: document.getElementById("status-copy"),
         statusRight: document.getElementById("status-right"),
         radarBadge: document.getElementById("radar-badge"),
-        dataSourceText: document.getElementById("data-source-text")
+        dataSourceText: document.getElementById("data-source-text"),
+        signOut: document.getElementById("sign-out")
     };
 
     function scaled(value, origin, zoom) {
@@ -285,8 +286,70 @@
     }
 
     elements.modeToggle.addEventListener("click", function () {
-        setMode(elements.modeToggle.getAttribute("aria-checked") !== "true");
+        var nextDemo = elements.modeToggle.getAttribute("aria-checked") !== "true";
+
+        setMode(nextDemo);
+
+        if (window.Session) {
+            window.Session.setDemoMode(nextDemo);
+        }
     });
+
+    if (elements.signOut) {
+        elements.signOut.addEventListener("click", function () {
+            var finished = false;
+            var failed = false;
+            var timer = null;
+
+            function finishSignOut() {
+                if (finished || failed) {
+                    return;
+                }
+
+                finished = true;
+
+                if (window.Session) {
+                    window.Session.clearSession();
+                    window.Session.clearServerHint();
+                }
+
+                window.location.replace("auth.html#/auth");
+            }
+
+            function failSignOut() {
+                if (finished || failed) {
+                    return;
+                }
+
+                failed = true;
+                elements.signOut.disabled = false;
+                window.alert("Could not sign out. Check the connection and try again.");
+            }
+
+            elements.signOut.disabled = true;
+
+            if (window.Session && typeof window.Session.logout === "function") {
+                /* Ask the server to revoke the session and clear the HttpOnly
+                   cookie. If the request fails, stay on the dashboard: clearing
+                   local state only would bounce off the server gate. */
+                timer = window.setTimeout(failSignOut, 5000);
+                window.Session.logout().then(function (ok) {
+                    window.clearTimeout(timer);
+                    if (ok) {
+                        finishSignOut();
+                    } else {
+                        failSignOut();
+                    }
+                }, function () {
+                    window.clearTimeout(timer);
+                    failSignOut();
+                });
+                return;
+            }
+
+            finishSignOut();
+        });
+    }
 
     elements.zoomIn.addEventListener("click", function () {
         changeZoom(1);
@@ -426,6 +489,6 @@
             });
     }
 
-    setMode(true);
+    setMode(window.Session ? window.Session.getDemoMode() : true);
     renderRadar();
 })();

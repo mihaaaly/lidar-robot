@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <title>Sign in · LiDAR Autonomous Robot</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="src/style.css">
+    <link rel="stylesheet" href="src/auth.css">
+    <script src="src/session.js"></script>
+    <script>
+        /* Already signed in? Skip the auth screens entirely.
+           Kept inline and before the body so no auth view flashes.
+
+           With the local backend the HttpOnly session cookie is the real
+           authority; auth.html is also gated server-side. The readable hint
+           cookie prevents a redirect loop when a stale localStorage entry
+           survives a server-side logout. In the static demo (no backend
+           marker) the localStorage session is still enough. */
+        (function () {
+            var cookiesOk = true;
+
+            try {
+                window.document.cookie = "lidar_cookie_check=1; Path=/; SameSite=Lax";
+                cookiesOk = window.document.cookie.indexOf("lidar_cookie_check=1") !== -1;
+                window.document.cookie = "lidar_cookie_check=; Max-Age=0; Path=/; SameSite=Lax";
+            } catch (error) {
+                cookiesOk = false;
+            }
+
+            window.LIDAR_COOKIES_BLOCKED = !cookiesOk;
+
+            /* Without cookies a server-side session cannot survive. Do not
+               bounce back to the dashboard from a stale localStorage entry. */
+            if (!cookiesOk) {
+                return;
+            }
+
+            if (!window.Session || !window.Session.isAuthenticated()) {
+                return;
+            }
+
+            if (!window.Session.hasBackend() || window.Session.hasServerHint()) {
+                window.location.replace("index.html");
+            }
+        })();
+    </script>
+</head>
+<body class="auth-page">
+    <svg class="auth-sprite" aria-hidden="true" focusable="false">
+        <symbol id="i-radar-24" viewBox="0 0 24 24" fill="none">
+            <path d="M6.98987 3.33953C8.89731 2.23676 11.1155 1.7948 13.3 2.08232C15.4844 2.36984 17.5128 3.37074 19.0699 4.92953L13.4098 10.5894M3.99963 5.99973H4.00963M2.28998 9.61933C1.91508 11.1464 1.90556 12.7403 2.26221 14.2718C2.61886 15.8032 3.33162 17.2289 4.34262 18.4332C5.35362 19.6375 6.63437 20.5865 8.08088 21.203C9.5274 21.8195 11.0989 22.0862 12.6678 21.9814C14.2367 21.8766 15.7588 21.4034 17.1105 20.6C18.4623 19.7967 19.6055 18.6859 20.4474 17.3579C21.2893 16.0299 21.8062 14.522 21.9561 12.9568C22.1059 11.3915 21.8846 9.813 21.31 8.34933M16.2399 7.75965C15.6644 7.18081 14.9769 6.72548 14.2194 6.42152C13.4618 6.11755 12.6503 5.97135 11.8343 5.99185C11.0183 6.01235 10.2151 6.19913 9.47379 6.54075C8.73248 6.88237 8.06867 7.37166 7.52298 7.97866C6.97729 8.58567 6.56118 9.29763 6.30013 10.071C6.03908 10.8444 5.93856 11.6629 6.00474 12.4764C6.07091 13.2899 6.30239 14.0814 6.68499 14.8024C7.0676 15.5235 7.5933 16.1588 8.22992 16.6696M11.9996 17.9997H12.0096M17.9892 11.6599C18.0436 12.6113 17.8706 13.5619 17.4845 14.4331C17.0985 15.3043 16.5105 16.0711 15.7692 16.6699M13.9996 11.9997C13.9996 13.1043 13.1042 13.9997 11.9996 13.9997C10.8951 13.9997 9.99963 13.1043 9.99963 11.9997C9.99963 10.8952 10.8951 9.99973 11.9996 9.99973C13.1042 9.99973 13.9996 10.8952 13.9996 11.9997Z" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-radar-18" viewBox="0 0 18 18" fill="none">
+            <path d="M5.24241 2.50465C6.67299 1.67757 8.33667 1.3461 9.975 1.56175C11.6133 1.77739 13.1346 2.52806 14.3024 3.69715L10.0574 7.94206M2.99974 4.4998H3.00724M1.7175 7.2145C1.43632 8.3598 1.42918 9.55526 1.69667 10.7038C1.96415 11.8524 2.49872 12.9217 3.25697 13.8249C4.01523 14.7282 4.97579 15.4399 6.06067 15.9022C7.14556 16.3646 8.32419 16.5646 9.50088 16.486C10.6776 16.4075 11.8191 16.0525 12.8329 15.45C13.8467 14.8475 14.7041 14.0144 15.3356 13.0184C15.967 12.0224 16.3546 10.8915 16.4671 9.71759C16.5795 8.54365 16.4134 7.35975 15.9825 6.262M12.1799 5.81974C11.7483 5.38561 11.2327 5.04411 10.6645 4.81614C10.0964 4.58817 9.4877 4.47852 8.87572 4.49389C8.26374 4.50927 7.66133 4.64935 7.10535 4.90557C6.54937 5.16178 6.05151 5.52874 5.64224 5.984C5.23298 6.43925 4.9209 6.97323 4.72511 7.55325C4.52932 8.13327 4.45393 8.74714 4.50356 9.3573C4.55319 9.96747 4.7268 10.5611 5.01375 11.1018C5.30071 11.6426 5.69498 12.1191 6.17245 12.5022M8.99974 13.4998H9.00724M13.4919 8.74491C13.5327 9.45844 13.4029 10.1714 13.1134 10.8248C12.8239 11.4783 12.3829 12.0533 11.8269 12.5024M10.4997 8.9998C10.4997 9.82822 9.82816 10.4998 8.99974 10.4998C8.17131 10.4998 7.49974 9.82822 7.49974 8.9998C7.49974 8.17137 8.17131 7.4998 8.99974 7.4998C9.82816 7.4998 10.4997 8.17137 10.4997 8.9998Z" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-radar-14" viewBox="0 0 14 14" fill="none">
+            <path d="M4.07743 1.94806C5.19011 1.30477 6.48408 1.04697 7.75833 1.21469C9.03259 1.38241 10.2158 1.96626 11.1241 2.87556L7.82239 6.17715M2.33313 3.49984H2.33896M1.33583 5.61128C1.11714 6.50206 1.11159 7.43186 1.31963 8.3252C1.52768 9.21853 1.94345 10.0502 2.5332 10.7527C3.12296 11.4552 3.87006 12.0088 4.71386 12.3684C5.55766 12.728 6.47437 12.8836 7.38957 12.8225C8.30477 12.7614 9.19267 12.4853 9.98116 12.0167C10.7697 11.5481 11.4365 10.9001 11.9277 10.1254C12.4188 9.35076 12.7203 8.47118 12.8077 7.55812C12.8951 6.64506 12.766 5.72424 12.4308 4.87044M9.4733 4.52646C9.13759 4.1888 8.73653 3.92319 8.29464 3.74588C7.85275 3.56857 7.37933 3.48329 6.90334 3.49524C6.42735 3.5072 5.95881 3.61616 5.52639 3.81544C5.09396 4.01471 4.70674 4.30013 4.38842 4.65422C4.07009 5.0083 3.82737 5.42362 3.67509 5.87475C3.5228 6.32587 3.46417 6.80333 3.50277 7.2779C3.54138 7.75247 3.6764 8.21417 3.89959 8.63476C4.12278 9.05534 4.42943 9.42597 4.80079 9.72396M6.9998 10.4998H7.00563M10.4937 6.80159C10.5254 7.35656 10.4245 7.91111 10.1993 8.41932C9.97412 8.92753 9.63111 9.3748 9.19869 9.72409M8.16646 6.99984C8.16646 7.64417 7.64413 8.1665 6.9998 8.1665C6.35546 8.1665 5.83313 7.64417 5.83313 6.99984C5.83313 6.3555 6.35546 5.83317 6.9998 5.83317C7.64413 5.83317 8.16646 6.3555 8.16646 6.99984Z" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-fingerprint-26" viewBox="0 0 26 26" fill="none">
+            <path d="M13.0004 10.8331C12.4258 10.8331 11.8746 11.0614 11.4682 11.4678C11.0619 11.8741 10.8336 12.4253 10.8336 12.9999C10.8336 14.105 10.7252 15.7193 10.5519 17.3336M15.1671 14.2135C15.1671 16.792 15.1671 21.1257 14.0836 23.8342M18.7316 22.7723C18.8616 22.1223 19.1975 20.2805 19.2734 19.5004M2.1658 12.9999C2.1658 10.726 2.88128 8.50979 4.21088 6.66511C5.54048 4.82043 7.4168 3.44084 9.57406 2.72177C11.7313 2.00271 14.0601 1.98061 16.2307 2.65861C18.4012 3.33661 20.3033 4.68034 21.6677 6.49946M2.1658 17.3336H2.17664M23.6177 17.3336C23.8344 15.1668 23.7596 11.533 23.6177 10.8331M5.41612 21.1255C5.95784 19.5004 6.49956 16.2502 6.49956 12.9999C6.49846 12.262 6.62303 11.5292 6.86793 10.8331M9.3711 23.8341C9.59862 23.119 9.85865 22.404 9.98866 21.6672M9.74988 7.36612C10.7384 6.79541 11.8598 6.49504 13.0012 6.49522C14.1427 6.49541 15.264 6.79614 16.2523 7.36717C17.2407 7.9382 18.0612 8.75939 18.6315 9.74817C19.2017 10.737 19.5016 11.8584 19.5008 12.9999V15.1667" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-arrow-right-16" viewBox="0 0 16 16" fill="none">
+            <path d="M3.33276 7.99999H12.6672M7.99996 12.6672L12.6672 7.99999L7.99996 3.33279" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-arrow-left-15" viewBox="0 0 15 15" fill="none">
+            <path d="M7.50001 3.1245L3.12451 7.5L7.50001 11.8755M3.12451 7.5H11.8755" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-arrow-up-right-13" viewBox="0 0 13 13" fill="none">
+            <path d="M9.2079 9.20791V3.79211H3.7921M9.2079 3.79211L3.7921 9.20791" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-arrow-up-right-12" viewBox="0 0 12 12" fill="none">
+            <path d="M8.4996 8.4996V3.5004H3.5004M8.4996 3.5004L3.5004 8.4996" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-book-open-14" viewBox="0 0 14 14" fill="none">
+            <path d="M7 4.08333V12.25M7 4.08333C7 3.46449 6.75415 2.871 6.31653 2.43342C5.87891 1.99583 5.28537 1.75 4.66648 1.75H1.74958C1.59486 1.75 1.44647 1.81146 1.33707 1.92085C1.22766 2.03025 1.1662 2.17862 1.1662 2.33333V9.91667C1.1662 10.0714 1.22766 10.2197 1.33707 10.3291C1.44647 10.4385 1.59486 10.5 1.74958 10.5H5.24986C5.71403 10.5 6.15918 10.6844 6.4874 11.0126C6.81561 11.3408 7 11.7859 7 12.25M7 4.08333C7 3.46449 7.24585 2.871 7.68347 2.43342C8.12109 1.99583 8.71463 1.75 9.33352 1.75H12.2504C12.4051 1.75 12.5535 1.81146 12.6629 1.92085C12.7723 2.03025 12.8338 2.17862 12.8338 2.33333V9.91667C12.8338 10.0714 12.7723 10.2197 12.6629 10.3291C12.5535 10.4385 12.4051 10.5 12.2504 10.5H8.75014C8.28597 10.5 7.84082 10.6844 7.5126 11.0126C7.18439 11.3408 7 11.7859 7 12.25" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-shield-check-17" viewBox="0 0 17 17" fill="none">
+            <path d="M6.37521 8.49967L7.79173 9.91638L10.6248 7.08296M14.1661 9.20834C14.1661 12.7501 11.6872 14.521 8.7408 15.5481C8.58652 15.6004 8.41892 15.5979 8.26627 15.5411C5.31281 14.521 2.83389 12.7501 2.83389 9.20834V4.24985C2.83389 4.06198 2.90851 3.88181 3.04134 3.74897C3.17416 3.61612 3.35431 3.54149 3.54216 3.54149C4.95868 3.54149 6.72934 2.69147 7.96171 1.61477C8.11176 1.48655 8.30264 1.41611 8.49999 1.41611C8.69735 1.41611 8.88822 1.48655 9.03827 1.61477C10.2777 2.69855 12.0413 3.54149 13.4578 3.54149C13.6457 3.54149 13.8258 3.61612 13.9586 3.74897C14.0915 3.88181 14.1661 4.06198 14.1661 4.24985V9.20834Z" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-eye-off-17" viewBox="0 0 17 17" fill="none">
+            <path d="M7.6029 3.59545C9.25286 3.39881 10.9218 3.74763 12.3549 4.58865C13.7881 5.42967 14.9066 6.71667 15.5397 8.25312C15.5987 8.41216 15.5987 8.58711 15.5397 8.74616C15.2794 9.37733 14.9353 9.97061 14.5168 10.51M9.97631 10.0287C9.57553 10.4158 9.03876 10.63 8.4816 10.6252C7.92444 10.6204 7.39147 10.3969 6.99748 10.0028C6.6035 9.60881 6.38002 9.07579 6.37517 8.51858C6.37033 7.96137 6.58452 7.42455 6.9716 7.02373M12.3806 12.3953C11.441 12.9519 10.3927 13.2999 9.30677 13.4157C8.22083 13.5314 7.12271 13.4122 6.08692 13.0661C5.05112 12.72 4.10189 12.1551 3.30362 11.4097C2.50535 10.6644 1.87673 9.75608 1.46041 8.74638C1.40138 8.58733 1.40138 8.41238 1.46041 8.25334C2.08843 6.7302 3.19345 5.45183 4.60962 4.61009M1.41683 1.41611L15.5833 15.5839" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-eye-17" viewBox="0 0 17 17" fill="none">
+            <path d="M7.6029 3.59545C9.25286 3.39881 10.9218 3.74763 12.3549 4.58865C13.7881 5.42967 14.9066 6.71667 15.5397 8.25312C15.5987 8.41216 15.5987 8.58711 15.5397 8.74616C15.2794 9.37733 14.9353 9.97061 14.5168 10.51M9.97631 10.0287C9.57553 10.4158 9.03876 10.63 8.4816 10.6252C7.92444 10.6204 7.39147 10.3969 6.99748 10.0028C6.6035 9.60881 6.38002 9.07579 6.37517 8.51858C6.37033 7.96137 6.58452 7.42455 6.9716 7.02373M12.3806 12.3953C11.441 12.9519 10.3927 13.2999 9.30677 13.4157C8.22083 13.5314 7.12271 13.4122 6.08692 13.0661C5.05112 12.72 4.10189 12.1551 3.30362 11.4097C2.50535 10.6644 1.87673 9.75608 1.46041 8.74638C1.40138 8.58733 1.40138 8.41238 1.46041 8.25334C2.08843 6.7302 3.19345 5.45183 4.60962 4.61009" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-check-12" viewBox="0 0 12 12" fill="none">
+            <path d="M9.99957 3L4.50012 8.4996L2.00037 5.99978" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-info-13" viewBox="0 0 13 13" fill="none">
+            <path d="M6.49999 8.66683V6.49999M6.49999 4.33315H6.5054M11.9171 6.49999C11.9171 9.49177 9.49177 11.9171 6.49999 11.9171C3.5082 11.9171 1.08289 9.49177 1.08289 6.49999C1.08289 3.5082 3.5082 1.08289 6.49999 1.08289C9.49177 1.08289 11.9171 3.5082 11.9171 6.49999Z" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-flask-conical-14" viewBox="0 0 14 14" fill="none">
+            <path d="M8.1673 1.1662V4.66648C8.16722 4.86219 8.21636 5.05478 8.31021 5.22652L11.5244 11.107C11.6216 11.2847 11.6709 11.4847 11.6674 11.6872C11.6639 11.8897 11.6077 12.0878 11.5044 12.2621C11.4011 12.4363 11.2542 12.5807 11.0782 12.6809C10.9022 12.7812 10.7032 12.8338 10.5006 12.8338H3.50067C3.29812 12.8338 3.09905 12.7812 2.92305 12.6809C2.74705 12.5807 2.60017 12.4363 2.49687 12.2621C2.39357 12.0878 2.33741 11.8897 2.33391 11.6872C2.33042 11.4847 2.3797 11.2847 2.47693 11.107L5.69107 5.22652C5.78492 5.05478 5.83407 4.86219 5.83398 4.66648V1.1662M3.76472 8.75014H10.2362M4.95872 1.1662H9.04202" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-crosshair-14" viewBox="0 0 14 14" fill="none">
+            <path d="M12.8339 7C12.8339 10.2219 10.222 12.8338 7.00006 12.8338M12.8339 7C12.8339 3.77808 10.222 1.1662 7.00006 1.1662M12.8339 7H10.5003M7.00006 12.8338C3.77814 12.8338 1.16626 10.2219 1.16626 7M7.00006 12.8338V10.5003M7.00006 1.1662C3.77814 1.1662 1.16626 3.77808 1.16626 7M7.00006 1.1662V3.49972M1.16626 7H3.49978" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+        <symbol id="i-navigation-14" viewBox="0 0 14 14" fill="none">
+            <path d="M12.8333 1.1662L1.75 6.4162L6.41667 7.58287L7.58333 12.2495L12.8333 1.1662Z" stroke="currentColor" stroke-linecap="round"/>
+        </symbol>
+    </svg>
+
+    <div class="app">
+        <header class="app-header auth-header">
+            <a class="brand" href="#/auth">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><use href="#i-radar-24"></use></svg>
+                </span>
+                <span class="brand-copy">
+                    <span class="brand-title">LiDAR Autonomous Robot</span>
+                    <span class="brand-subtitle" id="auth-subtitle">Secure access to your workspace</span>
+                </span>
+            </a>
+
+            <div class="header-controls" id="auth-header-controls" hidden>
+                <button class="mode-control" id="auth-mode-toggle" type="button" role="switch" aria-checked="true">
+                    <span class="mode-label" id="auth-mode-label">Design / Mock Mode</span>
+                    <span class="switch" aria-hidden="true"><span class="switch-knob"></span></span>
+                </button>
+                <div class="connection-badge" id="auth-connection-badge" role="status" aria-live="polite">
+                    <span class="status-dot" aria-hidden="true"></span>
+                    <span id="auth-connection-text">Demo mode · No live connection</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="page-context">
+            <nav class="breadcrumb" aria-label="Breadcrumb">
+                <span class="breadcrumb-section" id="auth-section">Authentication</span>
+                <span class="breadcrumb-route mono" id="auth-route" aria-current="page">/auth</span>
+            </nav>
+            <a class="docs-link" href="https://github.com/mihaaaly/lidar-robot#readme" target="_blank" rel="noopener noreferrer">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><use href="#i-book-open-14"></use></svg>
+                <span>Documentation</span>
+                <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><use href="#i-arrow-up-right-13"></use></svg>
+            </a>
+        </div>
+
+        <main class="auth-main">
+            <section class="auth-intro auth-intro--start" data-intro="start" aria-labelledby="auth-hero-title">
+                <div class="auth-intro-copy">
+                    <p class="auth-eyebrow mono">AUTONOMOUS ROBOTICS</p>
+                    <h1 class="auth-headline" id="auth-hero-title">Your robot.<br>A clearer perspective.</h1>
+                    <p class="auth-description">Explore LiDAR scans, inspect your surroundings, and bring your autonomous robot into focus.</p>
+                </div>
+            </section>
+
+            <section class="auth-intro auth-intro--form" data-intro="form" aria-labelledby="auth-hero-title-form" hidden>
+                <div class="auth-intro-copy">
+                    <p class="auth-eyebrow mono">PERCEPTION / NAVIGATION / CONTROL</p>
+                    <h1 class="auth-headline" id="auth-hero-title-form">Your robot.<br>A clearer perspective.</h1>
+                    <p class="auth-description">Explore LiDAR scans, inspect your surroundings, and bring your autonomous robot into focus.</p>
+                </div>
+                <div class="auth-preview">
+                    <div class="auth-preview-header">
+                        <span class="auth-preview-heading">
+                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true"><use href="#i-radar-18"></use></svg>
+                            <span class="auth-preview-title">Sensor Workspace</span>
+                            <span class="auth-preview-topic mono">/scan</span>
+                        </span>
+                        <span class="auth-preview-badge mono">DEMO</span>
+                    </div>
+                    <div class="auth-preview-viewport">
+                        <img src="assets/auth-sensor-preview.svg" width="600" height="350" alt="Illustrative LiDAR scan of a room with the robot at the origin">
+                    </div>
+                    <p class="auth-preview-disclaimer">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><use href="#i-flask-conical-14"></use></svg>
+                        <span>Illustrative sample data — not live measurement</span>
+                    </p>
+                </div>
+                <ul class="auth-capabilities">
+                    <li class="auth-capability">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><use href="#i-radar-14"></use></svg>
+                        <span>360° scan view</span>
+                    </li>
+                    <li class="auth-capability">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><use href="#i-crosshair-14"></use></svg>
+                        <span>Obstacle awareness</span>
+                    </li>
+                    <li class="auth-capability">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><use href="#i-navigation-14"></use></svg>
+                        <span>Robot navigation</span>
+                    </li>
+                </ul>
+            </section>
+
+            <section class="auth-column" data-panel="start" aria-labelledby="start-panel-title">
+                <div class="auth-card auth-card--start">
+                    <span class="auth-emblem" aria-hidden="true">
+                        <svg width="26" height="26" viewBox="0 0 26 26" fill="none"><use href="#i-fingerprint-26"></use></svg>
+                    </span>
+
+                    <div class="auth-form-intro auth-form-intro--start">
+                        <p class="auth-eyebrow auth-eyebrow--center mono">AUTHENTICATION</p>
+                        <h2 class="auth-panel-title" id="start-panel-title" tabindex="-1">Welcome back</h2>
+                        <p class="auth-panel-description">Log in to continue, or create an account to get started with LiDAR Autonomous Robot.</p>
+                    </div>
+
+                    <div class="auth-choices">
+                        <a class="auth-button auth-button--primary" href="#/auth/login">
+                            <span>Log in</span>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="#i-arrow-right-16"></use></svg>
+                        </a>
+                        <a class="auth-button auth-button--secondary" href="#/auth/register">
+                            <span>Create account</span>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="#i-arrow-right-16"></use></svg>
+                        </a>
+                    </div>
+
+                    <div class="auth-note auth-note--access">
+                        <svg width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true"><use href="#i-shield-check-17"></use></svg>
+                        <p>Your account is your entry point. Robot connections are configured inside the workspace.</p>
+                    </div>
+                </div>
+
+                <p class="auth-support">
+                    <span>Need a hand?</span>
+                    <a class="auth-link" href="https://github.com/mihaaaly/lidar-robot#readme" target="_blank" rel="noopener noreferrer">
+                        <span>Read the getting started guide</span>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true"><use href="#i-arrow-up-right-12"></use></svg>
+                    </a>
+                </p>
+            </section>
+
+            <section class="auth-column auth-column--form" data-panel="login" aria-labelledby="login-panel-title" hidden>
+                <a class="auth-back" href="#/auth">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><use href="#i-arrow-left-15"></use></svg>
+                    <span>Back to start</span>
+                </a>
+
+                <form class="auth-card auth-card--login" id="login-form" novalidate>
+                    <div class="auth-form-intro">
+                        <p class="auth-eyebrow mono">ACCOUNT / LOG IN</p>
+                        <h2 class="auth-panel-title" id="login-panel-title" tabindex="-1">Welcome back</h2>
+                        <p class="auth-panel-description">Log in to access your Sensor Workspace.</p>
+                    </div>
+
+                    <div class="auth-fields">
+                        <div class="auth-field">
+                            <label class="auth-label" for="login-email">Email address</label>
+                            <input class="auth-input" id="login-email" name="email" type="email" autocomplete="username" placeholder="you@robotics.io" spellcheck="false" autocapitalize="none" aria-describedby="login-email-error">
+                            <p class="auth-error" id="login-email-error" role="alert" hidden></p>
+                        </div>
+
+                        <div class="auth-field">
+                            <label class="auth-label" for="login-password">Password</label>
+                            <div class="auth-input-wrap">
+                                <input class="auth-input auth-input--password mono" id="login-password" name="password" type="password" autocomplete="current-password" spellcheck="false" aria-describedby="login-password-error">
+                                <button class="auth-reveal" type="button" aria-pressed="false" aria-label="Show password" data-reveal="login-password" title="Show password">
+                                    <svg class="auth-reveal-icon auth-reveal-icon--off" width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true"><use href="#i-eye-off-17"></use></svg>
+                                    <svg class="auth-reveal-icon auth-reveal-icon--on" width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true"><use href="#i-eye-17"></use></svg>
+                                </button>
+                            </div>
+                            <p class="auth-error" id="login-password-error" role="alert" hidden></p>
+                        </div>
+                    </div>
+
+                    <div class="auth-preferences">
+                        <label class="auth-check" for="login-remember">
+                            <input class="sr-only" id="login-remember" name="remember" type="checkbox" checked>
+                            <span class="auth-check-box" aria-hidden="true">
+                                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><use href="#i-check-12"></use></svg>
+                            </span>
+                            <span class="auth-check-label">Remember me</span>
+                        </label>
+                        <button class="auth-link auth-link--stub" id="forgot-password" type="button" aria-disabled="true" title="Password recovery is not available in this demo">Forgot password?</button>
+                    </div>
+
+                    <p class="auth-form-error" id="login-form-error" role="alert" hidden></p>
+
+                    <button class="auth-button auth-button--primary auth-button--submit" type="submit" id="login-submit">
+                        <span>Log in</span>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="#i-arrow-right-16"></use></svg>
+                    </button>
+
+                    <div class="auth-alt">
+                        <span>New to the workspace?</span>
+                        <a class="auth-link auth-link--alt" href="#/auth/register">Create account</a>
+                    </div>
+                </form>
+
+                <p class="auth-note auth-note--connection">
+                    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><use href="#i-info-13"></use></svg>
+                    <span>Logging in does not connect a robot automatically.</span>
+                </p>
+            </section>
+
+            <section class="auth-column auth-column--form" data-panel="register" aria-labelledby="register-panel-title" hidden>
+                <a class="auth-back" href="#/auth">
+                    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true"><use href="#i-arrow-left-15"></use></svg>
+                    <span>Back to start</span>
+                </a>
+
+                <form class="auth-card auth-card--register" id="register-form" novalidate>
+                    <div class="auth-form-intro">
+                        <p class="auth-eyebrow mono">ACCOUNT / REGISTER</p>
+                        <h2 class="auth-panel-title" id="register-panel-title" tabindex="-1">Create your account</h2>
+                        <p class="auth-panel-description">Set up your access to the Sensor Workspace.</p>
+                    </div>
+
+                    <div class="auth-fields">
+                        <div class="auth-field">
+                            <label class="auth-label" for="register-name">Full name</label>
+                            <input class="auth-input" id="register-name" name="name" type="text" autocomplete="name" spellcheck="false" aria-describedby="register-name-error">
+                            <p class="auth-error" id="register-name-error" role="alert" hidden></p>
+                        </div>
+
+                        <div class="auth-field">
+                            <label class="auth-label" for="register-email">Email address</label>
+                            <input class="auth-input" id="register-email" name="email" type="email" autocomplete="username" placeholder="you@robotics.io" spellcheck="false" autocapitalize="none" aria-describedby="register-email-error">
+                            <p class="auth-error" id="register-email-error" role="alert" hidden></p>
+                        </div>
+
+                        <div class="auth-field auth-field--password">
+                            <label class="auth-label" for="register-password">Password</label>
+                            <div class="auth-password-setup">
+                            <div class="auth-input-wrap">
+                                <input class="auth-input auth-input--password mono" id="register-password" name="password" type="password" autocomplete="new-password" spellcheck="false" aria-describedby="register-strength-label register-password-requirements register-password-error">
+                                <button class="auth-reveal" type="button" aria-pressed="false" aria-label="Show password" data-reveal="register-password" title="Show password">
+                                    <svg class="auth-reveal-icon auth-reveal-icon--off" width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true"><use href="#i-eye-off-17"></use></svg>
+                                    <svg class="auth-reveal-icon auth-reveal-icon--on" width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true"><use href="#i-eye-17"></use></svg>
+                                </button>
+                            </div>
+                            <div class="auth-strength">
+                                <span class="auth-strength-meter" aria-hidden="true">
+                                    <span class="auth-strength-segment"></span>
+                                    <span class="auth-strength-segment"></span>
+                                    <span class="auth-strength-segment"></span>
+                                    <span class="auth-strength-segment"></span>
+                                </span>
+                                <span class="auth-strength-label mono" id="register-strength-label" role="status" aria-live="polite"></span>
+                            </div>
+                            <p class="auth-requirements" id="register-password-requirements">12+ characters, with a number and a symbol.</p>
+                            </div>
+                            <p class="auth-error" id="register-password-error" role="alert" hidden></p>
+                        </div>
+
+                        <div class="auth-field">
+                            <label class="auth-label" for="register-confirm">Confirm password</label>
+                            <div class="auth-input-wrap">
+                                <input class="auth-input auth-input--password mono" id="register-confirm" name="confirm" type="password" autocomplete="new-password" spellcheck="false" aria-describedby="register-confirm-error">
+                                <button class="auth-reveal" type="button" aria-pressed="false" aria-label="Show password" data-reveal="register-confirm" title="Show password">
+                                    <svg class="auth-reveal-icon auth-reveal-icon--off" width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true"><use href="#i-eye-off-17"></use></svg>
+                                    <svg class="auth-reveal-icon auth-reveal-icon--on" width="17" height="17" viewBox="0 0 17 17" fill="none" aria-hidden="true"><use href="#i-eye-17"></use></svg>
+                                </button>
+                            </div>
+                            <p class="auth-error" id="register-confirm-error" role="alert" hidden></p>
+                        </div>
+                    </div>
+
+                    <div class="auth-consent">
+                        <input class="sr-only" id="register-consent" name="consent" type="checkbox" checked aria-describedby="register-consent-error">
+                        <span class="auth-check-box" aria-hidden="true">
+                            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><use href="#i-check-12"></use></svg>
+                        </span>
+                        <span class="auth-consent-text">
+                            <label for="register-consent">I agree to the </label><a class="auth-link auth-link--stub" href="#" aria-disabled="true" title="Not available in this demo" data-stub="terms">Terms of Service</a><span> and </span><a class="auth-link auth-link--stub" href="#" aria-disabled="true" title="Not available in this demo" data-stub="privacy">Privacy Policy</a><span>.</span>
+                        </span>
+                    </div>
+                    <p class="auth-error auth-error--consent" id="register-consent-error" role="alert" hidden></p>
+
+                    <p class="auth-form-error" id="register-form-error" role="alert" hidden></p>
+
+                    <button class="auth-button auth-button--primary auth-button--submit" type="submit" id="register-submit">
+                        <span>Create account</span>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="#i-arrow-right-16"></use></svg>
+                    </button>
+
+                    <div class="auth-alt">
+                        <span>Already have an account?</span>
+                        <a class="auth-link auth-link--alt" href="#/auth/login">Log in</a>
+                    </div>
+                </form>
+            </section>
+        </main>
+
+        <footer class="auth-footer">
+            <div class="auth-footer-left">
+                <span class="auth-footer-label mono" id="auth-footer-label">SECURE ACCESS</span>
+                <span class="auth-footer-copy" id="auth-footer-copy">Authentication required to continue.</span>
+            </div>
+            <span class="auth-footer-right mono" id="auth-footer-right">LiDAR Autonomous Robot</span>
+        </footer>
+    </div>
+
+    <p class="auth-toast" id="auth-stub-note" role="status" aria-live="polite" hidden></p>
+    <div class="auth-fatal" id="auth-fatal" role="alert" hidden>
+        <strong>Session helpers failed to load.</strong>
+        <span>Reload the page. If the problem persists, check that <code>src/session.js</code> is served.</span>
+    </div>
+
+    <script src="src/auth.js"></script>
+</body>
+</html>
