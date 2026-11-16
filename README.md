@@ -128,7 +128,7 @@ While the physical robot is under development the web UI runs on bundled demo da
 
 ```text
 lidar_project/lidar-robot/          # git root — this README lives here
-├── .github/workflows/ci.yml        # tests + coverage gate + type check
+├── README.md
 └── lidar-robot/                    # the project (all git paths are prefixed with it)
     ├── deploy/
     │   ├── README.md
@@ -345,7 +345,7 @@ ros2 launch rplidar_ros rplidar.launch.py
 1. `docs/interface.md` is the contract between the two sides — it is the first file to update when a topic, endpoint or data shape changes. `docs/architecture.md` explains how the pieces fit together.
 2. Both sides develop on independent branches, with demo data bundled in `web/public/src/` (`scan-points.js`, `maps-data.js`) while the robot side is incomplete.
 3. Once pushed to the repository and pulled onto the Raspberry Pi (`git pull`), the auth service serves the updated frontend (and the real session) at `http://<PI_IP>:8080`; restart it with `sudo systemctl restart lidar-auth.service`. The static demo fallback (`webui.service`) must not run at the same time, and Nginx — if used at all — only reverse-proxies to the Node service.
-4. Quality gate: `cd lidar-robot/server && npm run coverage` (tests + 90% line / 75% branch thresholds) and `npm run typecheck`, both enforced by CI on every push.
+4. Before every push, run the quality gate locally: `cd lidar-robot/server && npm run check && npm run coverage && npm run typecheck`. Coverage runs the tests and enforces 90% line / 75% branch thresholds. See [server/README.md](lidar-robot/server/README.md#quality-gate) for type-check tooling setup. There is no GitHub Actions workflow; these checks must pass locally before pushing.
 
 ---
 

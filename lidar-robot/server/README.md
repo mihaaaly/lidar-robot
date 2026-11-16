@@ -45,9 +45,18 @@ dependency-free at runtime:
 npm install --no-save --no-package-lock typescript@5 @types/node@22
 ```
 
-CI (`.github/workflows/ci.yml`) runs `check`, `coverage` and `typecheck` on Node 22
-and 24 for every push and pull request. Type checking deliberately excludes `test/`
-for now — the test helpers are dynamic fixtures; the server code is what is checked.
+Run the quality gate locally before every push; there is no GitHub Actions workflow:
+
+```bash
+# From the repository root:
+cd lidar-robot/server
+npm run check && npm run coverage && npm run typecheck
+```
+
+All three commands must pass before pushing. Coverage also runs the full test suite.
+When changing Node compatibility, repeat the checks on Node 22 and 24.
+Type checking deliberately excludes `test/` for now — the test helpers are dynamic
+fixtures; the server code is what is checked.
 
 ```bash
 npm test          # node --test test/*.test.js
